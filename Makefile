@@ -44,7 +44,7 @@ DEFINES := -DTYR_VERSION=0.62-nx -DQBASEDIR=/switch/nxquake -DNDEBUG -DNQ_HACK
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
-CFLAGS	:=	-g -O2 -fweb -frename-registers -ffast-math -ffunction-sections \
+CFLAGS	:=	-g -O2 -ffunction-sections \
 			$(ARCH) $(DEFINES)
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
