@@ -541,9 +541,23 @@ static void M_Options_Draw(void) {
     M_DrawCharacter(200, 32 + m_options_cursor * 8, 12 + ((int)(realtime * 4) & 1));
 }
 
+static void M_Options_SaveConfig(void) {
+    FILE *f = fopen(va("%s/config.cfg", com_gamedir), "w");
+    if (!f) {
+        Con_Printf("Couldn't write config.cfg.\n");
+        return;
+    }
+
+    Key_WriteBindings(f);
+    Cvar_WriteVariables(f);
+
+    fclose(f);
+}
+
 static void M_Options_Key(knum_t keynum) {
     switch (keynum) {
         case K_ESCAPE:
+            M_Options_SaveConfig();
             M_Menu_Main_f();
             break;
 
