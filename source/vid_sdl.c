@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 
 #include <SDL2/SDL.h>
+#include <switch.h>
 
 #include "cdaudio.h"
 #include "cmd.h"
@@ -124,48 +125,50 @@ static qboolean Minimized;
 qboolean window_visible(void) { return !Minimized; }
 
 static void VID_InitModeList(void) {
-    int i, err;
-    int displays, sdlmodes;
-    SDL_DisplayMode sdlmode;
+    int i;
     qvidmode_t *mode;
-    qvidformat_t *format;
+    const qvidmode_t *nxmode;
+    qvidformat_t *format, nxformat;
 
-    displays = SDL_GetNumVideoDisplays();
-    if (displays < 1) Sys_Error("%s: no displays found (%s)", __func__, SDL_GetError());
+    static const qvidmode_t nxmodes[] = {
+        { 1,  320,  240, 32, 0 },
+        { 2,  640,  360, 32, 0 },
+        { 3,  640,  480, 32, 0 },
+        { 4,  768,  432, 32, 0 },
+        { 5, 1024,  576, 32, 0 },
+        { 6, 1280,  720, 32, 0 },
+        { 7, 1600,  900, 32, 0 },
+        { 8, 1920, 1080, 32, 0 },
+    };
 
-    /* FIXME - allow use of more than one display */
-    sdlmodes = SDL_GetNumDisplayModes(0);
-    if (sdlmodes < 0)
-        Con_SafePrintf("%s: error enumerating SDL display modes (%s)\n", __func__, SDL_GetError());
+    // don't have 900p or 1080p in handheld mode
+    int nxnummodes = appletGetOperationMode() ? 8 : 6;
+
+    if (SDL_GetNumVideoDisplays() < 1)
+        Sys_Error("%s: no displays found (%s)", __func__, SDL_GetError());
 
     /*
      * Check availability of fullscreen modes
      * (default to display 0 for now)
      */
+    nxformat.format = sdl_desktop_format->format;
     mode = &modelist[1];
+    nxmode = &nxmodes[0];
     nummodes = 1;
-    for (i = 0; i < sdlmodes && nummodes < MAX_MODE_LIST; i++) {
-        err = SDL_GetDisplayMode(0, i, &sdlmode);
-        if (err) Sys_Error("%s: couldn't get mode %d info (%s)", __func__, i, SDL_GetError());
+    for (i = 0; i < nxnummodes && nummodes < MAX_MODE_LIST; i++, nxmode++) {
+        printf("%s: checking mode %i: %dx%d, %s\n", __func__, i, nxmode->width, nxmode->height,
+               SDL_GetPixelFormatName(nxformat.format));
 
-        printf("%s: checking mode %i: %dx%d, %s\n", __func__, i, sdlmode.w, sdlmode.h,
-               SDL_GetPixelFormatName(sdlmode.format));
+        if (nxmode->height > MAXHEIGHT || nxmode->width > MAXWIDTH) continue;
 
-        if (sdlmode.h > MAXHEIGHT || sdlmode.w > MAXWIDTH) continue;
-
-        if (SDL_PIXELTYPE(sdlmode.format) == SDL_PIXELTYPE_PACKED32)
-            modelist[nummodes].bpp = 32;
-        else if (SDL_PIXELTYPE(sdlmode.format) == SDL_PIXELTYPE_PACKED16)
-            modelist[nummodes].bpp = 16;
-        else
-            continue;
+        modelist[nummodes].bpp = nxmode->bpp;
 
         mode->modenum = nummodes;
-        mode->width = sdlmode.w;
-        mode->height = sdlmode.h;
-        mode->refresh = sdlmode.refresh_rate;
+        mode->width = nxmode->width;
+        mode->height = nxmode->height;
+        mode->refresh = nxmode->refresh;
         format = (qvidformat_t *)mode->driverdata;
-        format->format = sdlmode.format;
+        format->format = nxformat.format;
         nummodes++;
         mode++;
     }
