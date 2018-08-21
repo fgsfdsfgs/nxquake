@@ -142,7 +142,9 @@ static void VID_InitModeList(void) {
     };
 
     // don't have 900p or 1080p in handheld mode
-    int nxnummodes = appletGetOperationMode() ? 8 : 6;
+    // TODO: figure out how to make SDL actually display shit in 1080p
+    // and not 1080p downscaled to 720p; uncomment line below afterwards
+    int nxnummodes = 6; /*appletGetOperationMode() ? 8 : 6;*/
 
     if (SDL_GetNumVideoDisplays() < 1)
         Sys_Error("%s: no displays found (%s)", __func__, SDL_GetError());
