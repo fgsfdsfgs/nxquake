@@ -28,8 +28,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/iosupport.h>
 #include <time.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #include "common.h"
 #include "sys.h"
@@ -75,6 +77,8 @@ void Sys_Printf(const char *fmt, ...) {
     vsnprintf(text, sizeof(text), fmt, argptr);
     va_end(argptr);
 
+#ifdef DEBUG
+
 #ifdef SERVERONLY
     if (sys_nostdout.value) return;
 #else
@@ -94,6 +98,7 @@ void Sys_Printf(const char *fmt, ...) {
             putc(*p, flog);
     }
     fclose(flog);
+#endif // DEBUG
 }
 
 void Sys_Quit(void) {
@@ -268,11 +273,152 @@ void Sys_MakeCodeWriteable(void *start_addr, void *end_addr) {
 
 /*
  * ===========================================================================
- * Main
+ * Launcher
  * ===========================================================================
  */
 
-int main(int argc, const char *argv[]) {
+static inline int IsDir(const char *path) {
+    DIR *dir = opendir(path);
+    if (dir) { closedir(dir); return 1; }
+    return 0;
+}
+
+// looks like there's no way to disable the console in libnx, so we improvise
+
+static void UnfuckStdout(void) {
+    // consoleInit() has an internal static flag which makes it init devoptabs
+    // only once, so if you want to use the console again, you'll have to 
+    // restore them
+    extern const devoptab_t dotab_stdnull;
+    devoptab_list[STD_OUT] = &dotab_stdnull;
+    devoptab_list[STD_ERR] = &dotab_stdnull;
+}
+
+static void SelectModRedraw(int selected, int nmods, char mods[][128]) {
+    int i;
+
+    consoleClear();
+    printf("\n    Select game directory");
+    printf("\n    =====================");
+    printf("\n\n");
+
+    for (i = 0; i < nmods; ++i) {
+        if (selected == i)
+            printf(" >  %s\n", mods[i]);
+        else
+            printf("    %s\n", mods[i]);
+    }
+
+    printf("\n\nDPAD to select, A to confirm\n");
+}
+
+static int SelectMod(int nmods, char mods[][128]) {
+    int i, selected;
+    u64 keys, oldkeys;
+
+    gfxInitDefault();
+    consoleInit(NULL);
+
+    oldkeys = keys = 0;
+    selected = 0;
+
+    SelectModRedraw(selected, nmods, mods);
+
+    while (appletMainLoop()) {
+        hidScanInput();
+        keys = hidKeysDown(CONTROLLER_P1_AUTO);
+
+        if (keys & KEY_A) {
+            break;
+        } else if ((keys & KEY_DOWN) && !(oldkeys & KEY_DOWN)) {
+            selected = (selected == nmods - 1) ? 0 : selected + 1;
+            SelectModRedraw(selected, nmods, mods);
+        } else if ((keys & KEY_UP) && !(oldkeys & KEY_UP)) {
+            selected = (selected == 0) ? nmods - 1 : selected - 1;
+            SelectModRedraw(selected, nmods, mods);
+        }
+
+        gfxFlushBuffers();
+        gfxSwapBuffers();
+        gfxWaitForVsync();
+
+        oldkeys = keys;
+    }
+
+    UnfuckStdout();
+    gfxExit();
+
+    return selected;
+}
+
+int Q_main(int argc, const char *argv[]);
+
+int main(int argc, char *argv[]) {
+    static char *args[16];
+    static char fullpath[1024];
+    static char mods[20][128];
+    int nargs, i, nmods, havebase;
+    DIR *dir;
+    struct dirent *d;
+
+    // just in case
+    if (argc <= 0) {
+        nargs = 1;
+        args[0] = "nxquake.nro";
+    } else {
+        nargs = argc;
+        for (i = 0; i < argc && i < 8; ++i)
+            args[i] = argv[i];
+    }
+
+    // check for mods
+
+    nmods = 0;
+
+    dir = opendir(stringify(QBASEDIR));
+    if (!dir) Sys_Error("could not open `" stringify(QBASEDIR) "`");
+
+    havebase = 0;
+    while ((d = readdir(dir))) {
+        if (!d->d_name || d->d_name[0] == '.') continue;
+
+        snprintf(fullpath, sizeof(fullpath)-1, stringify(QBASEDIR) "/%s", d->d_name);
+        if (!IsDir(fullpath)) continue;
+
+        if (!havebase && !strncasecmp(d->d_name, "id1", 3))
+            havebase = 1;
+
+        strncpy(mods[nmods], d->d_name, 127);
+        if (++nmods >= 20) break; 
+    }
+
+    closedir(dir);
+
+    if (!havebase)
+        Sys_Error("base game directory `id1` not found in `%s`", stringify(QBASEDIR));
+
+    // show a simple select menu if there's multiple mods
+
+    if (nmods > 1) {
+        i = SelectMod(nmods, mods);
+        if (strncasecmp(mods[i], "id1", 3)) {
+            args[nargs++] = "-game";
+            args[nargs++] = mods[i];
+        }
+    }
+
+    args[nargs] = NULL;
+
+    return Q_main(nargs, (const char **)args);
+}
+
+/*
+ * ===========================================================================
+ * Actual main
+ * ===========================================================================
+ */
+
+int Q_main(int argc, const char **argv) {
     double time, oldtime, newtime;
     quakeparms_t parms;
 #ifdef SERVERONLY
@@ -311,7 +457,7 @@ int main(int argc, const char *argv[]) {
         printf("Quake -- TyrQuake Version %s\n", stringify(TYR_VERSION));
 #endif
 #ifdef QW_HACK
-    printf("QuakeWorld -- TyrQuake Version %s\n", stringify(TYR_VERSION));
+        printf("QuakeWorld -- TyrQuake Version %s\n", stringify(TYR_VERSION));
 #endif
 
     Sys_Init();
