@@ -377,7 +377,7 @@ typedef enum {
     M_OPTIONS_CURSOR_SOUNDVOLUME,
     M_OPTIONS_CURSOR_ALWAYSRUN,
     M_OPTIONS_CURSOR_MOUSEINVERT,
-    M_OPTIONS_CURSOR_MOUSELOOK,
+    // M_OPTIONS_CURSOR_MOUSELOOK,
     M_OPTIONS_CURSOR_LOOKSPRING,
     M_OPTIONS_CURSOR_LOOKSTRAFE,
 #ifdef QW_HACK
@@ -385,7 +385,7 @@ typedef enum {
     M_OPTIONS_CURSOR_HUD,
 #endif
     M_OPTIONS_CURSOR_VIDEO,
-    M_OPTIONS_CURSOR_MOUSEGRAB,
+    // M_OPTIONS_CURSOR_MOUSEGRAB,
     M_OPTIONS_CURSOR_LINES,
 } m_options_cursor_t;
 
@@ -438,9 +438,9 @@ static void M_AdjustSliders(int dir) {
         case M_OPTIONS_CURSOR_MOUSEINVERT:
             Cvar_SetValue("m_pitch", -m_pitch.value);
             break;
-        case M_OPTIONS_CURSOR_MOUSELOOK:
-            Cvar_SetValue("m_freelook", !m_freelook.value);
-            break;
+        // case M_OPTIONS_CURSOR_MOUSELOOK:
+        //     Cvar_SetValue("m_freelook", !m_freelook.value);
+        //     break;
         case M_OPTIONS_CURSOR_LOOKSPRING:
             Cvar_SetValue("lookspring", !lookspring.value);
             break;
@@ -455,9 +455,9 @@ static void M_AdjustSliders(int dir) {
             Cvar_SetValue("cl_hudswap", !cl_hudswap.value);
             break;
 #endif
-        case M_OPTIONS_CURSOR_MOUSEGRAB:
-            Cvar_SetValue("_windowed_mouse", !_windowed_mouse.value);
-            break;
+        // case M_OPTIONS_CURSOR_MOUSEGRAB:
+        //     Cvar_SetValue("_windowed_mouse", !_windowed_mouse.value);
+        //     break;
         default:
             break;
     }
@@ -498,7 +498,7 @@ static void M_Options_Draw(void) {
     M_DrawSlider(220, height, slider);
 
     slider = (sensitivity.value - 1) / 10;
-    M_Print(16, height += 8, "           Mouse Speed");
+    M_Print(16, height += 8, "            Look Speed");
     M_DrawSlider(220, height, slider);
 
     slider = bgmvolume.value;
@@ -512,11 +512,11 @@ static void M_Options_Draw(void) {
     M_Print(16, height += 8, "            Always Run");
     M_DrawCheckbox(220, height, cl_run.value);
 
-    M_Print(16, height += 8, "          Invert Mouse");
+    M_Print(16, height += 8, "         Invert Look Y");
     M_DrawCheckbox(220, height, m_pitch.value < 0);
 
-    M_Print(16, height += 8, "            Mouse Look");
-    M_DrawCheckbox(220, height, m_freelook.value);
+    // M_Print(16, height += 8, "            Mouse Look");
+    // M_DrawCheckbox(220, height, m_freelook.value);
 
     M_Print(16, height += 8, "            Lookspring");
     M_DrawCheckbox(220, height, lookspring.value);
@@ -534,8 +534,8 @@ static void M_Options_Draw(void) {
 
     M_Print(16, height += 8, "         Video Options");
 
-    M_Print(16, height += 8, "             Use Mouse");
-    M_DrawCheckbox(220, height, _windowed_mouse.value);
+    // M_Print(16, height += 8, "             Use Mouse");
+    // M_DrawCheckbox(220, height, _windowed_mouse.value);
 
     /* cursor */
     M_DrawCharacter(200, 32 + m_options_cursor * 8, 12 + ((int)(realtime * 4) & 1));
@@ -867,6 +867,7 @@ static void M_Quit_Key(knum_t keynum) {
             m_state = m_quit_prevstate;
             break;
 
+        case K_LCTRL:
         case K_y:
             key_dest = key_console;
 #ifdef NQ_HACK
