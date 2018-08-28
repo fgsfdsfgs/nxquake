@@ -85,7 +85,7 @@ void Sys_Printf(const char *fmt, ...) {
     if (nostdout) return;
 #endif
 
-    FILE *flog = fopen(stringify(QBASEDIR) "/console.log", "a");
+    FILE *flog = fopen(QBASEDIR "/console.log", "a");
     if (!flog) return;
 
     for (p = (unsigned char *)text; *p; p++) {
@@ -120,7 +120,7 @@ void Sys_Error(const char *error, ...) {
     char string[MAX_PRINTMSG];
     FILE *fout;
 
-    fout = fopen(stringify(QBASEDIR) "/error.log", "w");
+    fout = fopen(QBASEDIR "/error.log", "w");
 
     va_start(argptr, error);
     vsnprintf(string, sizeof(string), error, argptr);
@@ -375,14 +375,14 @@ int main(int argc, char *argv[]) {
 
     nmods = 0;
 
-    dir = opendir(stringify(QBASEDIR));
-    if (!dir) Sys_Error("could not open `" stringify(QBASEDIR) "`");
+    dir = opendir(QBASEDIR);
+    if (!dir) Sys_Error("could not open `" QBASEDIR "`");
 
     havebase = 0;
     while ((d = readdir(dir))) {
         if (!d->d_name || d->d_name[0] == '.') continue;
 
-        snprintf(fullpath, sizeof(fullpath)-1, stringify(QBASEDIR) "/%s", d->d_name);
+        snprintf(fullpath, sizeof(fullpath)-1, QBASEDIR "/%s", d->d_name);
         if (!IsDir(fullpath)) continue;
 
         if (!havebase && !strncasecmp(d->d_name, "id1", 3))
@@ -395,7 +395,7 @@ int main(int argc, char *argv[]) {
     closedir(dir);
 
     if (!havebase)
-        Sys_Error("base game directory `id1` not found in `%s`", stringify(QBASEDIR));
+        Sys_Error("base game directory `id1` not found in `%s`", QBASEDIR);
 
     // show a simple select menu if there's multiple mods
 
@@ -435,7 +435,7 @@ int Q_main(int argc, const char **argv) {
     COM_InitArgv(argc, argv);
     parms.argc = com_argc;
     parms.argv = com_argv;
-    parms.basedir = stringify(QBASEDIR);
+    parms.basedir = QBASEDIR;
     parms.memsize = Memory_GetSize();
     parms.membase = malloc(parms.memsize);
     if (!parms.membase) Sys_Error("Allocation of %d byte heap failed", parms.memsize);

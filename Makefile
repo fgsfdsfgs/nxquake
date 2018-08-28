@@ -30,13 +30,18 @@ include $(DEVKITPRO)/libnx/switch_rules
 #     - icon.jpg
 #     - <libnx folder>/default_icon.jpg
 #---------------------------------------------------------------------------------
+
+APP_TITLE	:=	NXQuake
+APP_AUTHOR	:=	fgsfds
+APP_VERSION	:=	0.1.1
+
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
 INCLUDES	:=	include
 EXEFS_SRC	:=	exefs_src
-DEFINES := -DTYR_VERSION=0.62-nx -DQBASEDIR=/switch/nxquake -DNDEBUG -DNQ_HACK
+DEFINES := -DTYR_VERSION=0.62-nx -DNDEBUG -DNQ_HACK
 #ROMFS	:=	romfs
 
 #---------------------------------------------------------------------------------

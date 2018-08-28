@@ -40,6 +40,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define MAX_OSPATH 1024
 #endif
 
+#if !defined(QBASEDIR) && defined(__SWITCH__)
+#define QBASEDIR "/switch/nxquake"
+#endif
+
 #ifndef MAXHOSTNAMELEN
 #define MAXHOSTNAMELEN 1024
 #endif
