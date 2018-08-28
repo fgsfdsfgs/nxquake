@@ -32,6 +32,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 #include <unistd.h>
 #include <dirent.h>
+#include <switch.h>
+#include <SDL2/SDL.h>
 
 #include "common.h"
 #include "sys.h"
@@ -105,6 +107,8 @@ void Sys_Quit(void) {
 #ifndef SERVERONLY
     Host_Shutdown();
 #endif
+    // we'll have have to do this here
+    SDL_Quit();
     exit(0);
 }
 
