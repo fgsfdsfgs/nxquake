@@ -867,7 +867,7 @@ static void M_Quit_Key(knum_t keynum) {
             m_state = m_quit_prevstate;
             break;
 
-        case K_LCTRL:
+        case K_LALT:
         case K_y:
             key_dest = key_console;
 #ifdef NQ_HACK
