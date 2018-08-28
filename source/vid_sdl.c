@@ -95,7 +95,7 @@ void VID_ShiftPalette(const byte *palette) { VID_SetPalette(palette); }
 void VID_SetDefaultMode(void) {}
 
 static cvar_t vid_mode = {
-    .name = "vid_mode", .string = stringify(VID_MODE_WINDOWED), .archive = false};
+    .name = "vid_mode", .string = stringify(VID_MODE_WINDOWED), .archive = true};
 static cvar_t _vid_default_mode = {
     .name = "_vid_default_mode", .string = stringify(VID_MODE_WINDOWED), .archive = true};
 static cvar_t _vid_default_mode_win = {.name = "_vid_default_mode_win",

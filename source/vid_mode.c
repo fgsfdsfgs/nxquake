@@ -96,7 +96,7 @@ static vid_menustate_t vid_menustate;
 
 void VID_MenuInitState(const qvidmode_t *mode) {
     vid_menustate.mode = *mode;
-    vid_menustate.fullscreen = !!vid_modenum;
+    vid_menustate.fullscreen = 1;
     vid_menustate.cursor = VID_MENU_CURSOR_RESOLUTION;
 }
 
@@ -421,7 +421,7 @@ void VID_MenuKey_(vid_menustate_t *menu, knum_t keynum) {
                     }
                     break;
                 case VID_MENU_CURSOR_FULLSCREEN:
-                    menu->fullscreen = !menu->fullscreen;
+                    menu->fullscreen = 1;
                     break;
                 default:
                     break;
@@ -449,7 +449,7 @@ void VID_MenuKey_(vid_menustate_t *menu, knum_t keynum) {
                     }
                     break;
                 case VID_MENU_CURSOR_FULLSCREEN:
-                    menu->fullscreen = !menu->fullscreen;
+                    menu->fullscreen = 1;
                     break;
                 default:
                     break;
@@ -476,7 +476,7 @@ void VID_MenuKey_(vid_menustate_t *menu, knum_t keynum) {
                     }
                     break;
                 case VID_MENU_CURSOR_FULLSCREEN:
-                    menu->fullscreen = !menu->fullscreen;
+                    menu->fullscreen = 1;
                     break;
                 default:
                     break;
