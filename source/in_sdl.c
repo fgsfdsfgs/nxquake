@@ -601,7 +601,8 @@ static void IN_JoyMove(usercmd_t *cmd) {
     cl.viewangles[YAW] -= x_cam;
 
     V_StopPitchDrift();
-    cl.viewangles[PITCH] += y_cam;
+    int invert = m_pitch.value < 0 ? -1 : 1;
+    cl.viewangles[PITCH] += y_cam * invert;
 }
 
 void IN_Init(void) {
