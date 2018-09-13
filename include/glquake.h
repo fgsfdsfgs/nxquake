@@ -21,19 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef GLQUAKE_H
 #define GLQUAKE_H
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
-
-#ifdef APPLE_OPENGL
-#include <OpenGL/gl.h>
-#else
-#include <GL/gl.h>
-#endif
-
-#ifdef _WIN32
-#include <GL/glext.h>
-#endif
+#include <GLES2/gl2.h>
 
 #include "client.h"
 #include "model.h"
@@ -48,15 +36,6 @@ void GL_BeginRendering(int *x, int *y, int *width, int *height);
 void GL_EndRendering(void);
 
 extern unsigned char d_15to8table[65536];
-
-/* ARB Multitexture compatibilty for old GL headers... remove this? */
-#ifndef GL_VERSION_1_2
-#define GL_TEXTURE0_ARB 0x84C0
-#define GL_TEXTURE1_ARB 0x84C1
-#endif
-#ifndef GL_VERSION_1_3
-#define GL_MAX_TEXTURE_UNITS GL_MAX_TEXTURE_UNITS_ARB
-#endif
 
 extern float gldepthmin, gldepthmax;
 
@@ -258,7 +237,14 @@ void R_DrawSkyChain(msurface_t *s);
 //
 // gl_draw.c
 //
+
 void GL_Set2D(void);
+
+//
+// gl_stuff.c
+//
+
+#include "glstuff.h"
 
 //
 // gl_rmain.c

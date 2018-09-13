@@ -31,7 +31,7 @@ void Q_SDL_InitOnce(void) {
 
     if (init_done) return;
 
-    if (SDL_Init(0) < 0) Sys_Error("SDL_Init(0) failed: %s", SDL_GetError());
+    if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS) < 0) Sys_Error("SDL_Init(0) failed: %s", SDL_GetError());
 
     init_done = true;
 }

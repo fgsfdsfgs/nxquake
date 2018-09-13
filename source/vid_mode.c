@@ -48,11 +48,11 @@ double vid_testendtime;
 
 static const char *VID_GetModeDescription(const qvidmode_t *mode);
 
-static cvar_t vid_fullscreen = {"vid_fullscreen", "0", true};
-static cvar_t vid_width = {"vid_width", "640", true};
-static cvar_t vid_height = {"vid_height", "480", true};
+static cvar_t vid_fullscreen = {"vid_fullscreen", "1", true};
+static cvar_t vid_width = {"vid_width", "1280", true};
+static cvar_t vid_height = {"vid_height", "720", true};
 static cvar_t vid_bpp = {"vid_bpp", "32", true};
-static cvar_t vid_refreshrate = {"vid_refreshrate", "60", true};
+static cvar_t vid_refreshrate = {"vid_refreshrate", "0", true};
 
 /* Compare function for qsort - highest res to lowest */
 static int qvidmodecmp(const void *inmode1, const void *inmode2) {

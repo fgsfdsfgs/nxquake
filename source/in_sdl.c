@@ -510,10 +510,8 @@ void IN_ProcessEvents(void) {
                 break;
 
             case SDL_MOUSEMOTION:
-                if (SDL_GetWindowGrab(sdl_window)) {
-                    mouse_x += event.motion.xrel;
-                    mouse_y += event.motion.yrel;
-                }
+                mouse_x += event.motion.xrel;
+                mouse_y += event.motion.yrel;
                 break;
 
             case SDL_JOYBUTTONDOWN:

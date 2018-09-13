@@ -33,15 +33,15 @@ include $(DEVKITPRO)/libnx/switch_rules
 
 APP_TITLE	:=	NXQuake
 APP_AUTHOR	:=	fgsfds
-APP_VERSION	:=	0.1.1
+APP_VERSION	:=	0.2.0
 
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:=	source
+SOURCES		:=	source source/gl
 DATA		:=	data
 INCLUDES	:=	include
 EXEFS_SRC	:=	exefs_src
-DEFINES := -DTYR_VERSION=0.62-nx -DNDEBUG -DNQ_HACK
+DEFINES	:=	-DTYR_VERSION=0.62-nx -DDEBUG -DNQ_HACK -DGLQUAKE
 #ROMFS	:=	romfs
 
 #---------------------------------------------------------------------------------
@@ -49,7 +49,7 @@ DEFINES := -DTYR_VERSION=0.62-nx -DNDEBUG -DNQ_HACK
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a -mtune=cortex-a57 -mtp=soft -fPIE
 
-CFLAGS	:=	-g -O3 -ffunction-sections \
+CFLAGS	:=	-g -O2 -ffunction-sections -std=gnu11 \
 			$(ARCH) $(DEFINES)
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__
@@ -59,7 +59,7 @@ CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -lSDL2main -lSDL2 -lm -lnx
+LIBS	:= -lSDL2 -lEGL -lGLESv2 -lglapi -ldrm_nouveau -lm -lnx -lstdc++
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
