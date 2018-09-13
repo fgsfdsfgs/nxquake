@@ -80,6 +80,7 @@ void Sys_Printf(const char *fmt, ...) {
     va_end(argptr);
 
 #ifdef DEBUG
+    printf(text);
 
 #ifdef SERVERONLY
     if (sys_nostdout.value) return;
@@ -87,8 +88,8 @@ void Sys_Printf(const char *fmt, ...) {
     if (nostdout) return;
 #endif
 
-    FILE *flog = fopen(QBASEDIR "/console.log", "a");
-    if (!flog) return;
+    /*FILE *flog = fopen(QBASEDIR "/console.log", "a");
+    //if (!flog) return;
 
     for (p = (unsigned char *)text; *p; p++) {
 #ifdef SERVERONLY
@@ -99,7 +100,7 @@ void Sys_Printf(const char *fmt, ...) {
         else
             putc(*p, flog);
     }
-    fclose(flog);
+    fclose(flog);*/
 #endif // DEBUG
 }
 
@@ -108,7 +109,9 @@ void Sys_Quit(void) {
     Host_Shutdown();
 #endif
     // we'll have have to do this here
-    SDL_Quit();
+    socketExit();
+    if (SDL_WasInit(0))
+      SDL_Quit();
     exit(0);
 }
 
@@ -124,12 +127,15 @@ void Sys_Error(const char *error, ...) {
     char string[MAX_PRINTMSG];
     FILE *fout;
 
-    fout = fopen(QBASEDIR "/error.log", "w");
-
     va_start(argptr, error);
     vsnprintf(string, sizeof(string), error, argptr);
     va_end(argptr);
 
+#ifdef DEBUG
+    printf(string);
+#endif
+
+    fout = fopen(QBASEDIR "/error.log", "w");
     if (fout) {
         fprintf(fout, "Error: %s\n", string);
         fclose(fout);
@@ -138,6 +144,10 @@ void Sys_Error(const char *error, ...) {
 #ifndef SERVERONLY
     Host_Shutdown();
 #endif
+    // we'll have to do this here
+    socketExit();
+    if (SDL_WasInit(0))
+      SDL_Quit();
     exit(1);
 }
 
@@ -365,6 +375,11 @@ int main(int argc, char *argv[]) {
     DIR *dir;
     struct dirent *d;
 
+    socketInitializeDefault();
+#ifdef DEBUG
+    nxlinkStdio();
+#endif
+
     // just in case
     if (argc <= 0) {
         nargs = 1;
@@ -455,7 +470,6 @@ int Q_main(int argc, const char **argv) {
 
     // Make stdin non-blocking
     // FIXME - check both return values
-    if (!noconinput) fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL, 0) | O_NONBLOCK);
     if (!nostdout)
 #ifdef NQ_HACK
         printf("Quake -- TyrQuake Version %s\n", stringify(TYR_VERSION));
@@ -477,22 +491,6 @@ int Q_main(int argc, const char **argv) {
     oldtime = Sys_DoubleTime();
 #endif
     while (appletMainLoop()) {
-#ifdef SERVERONLY
-        /*
-         * select on the net socket and stdin
-         * the only reason we have a timeout at all is so that if the last
-         * connected client times out, the message would not otherwise
-         * be printed until the next event.
-         */
-        FD_ZERO(&fdset);
-        if (do_stdin) FD_SET(0, &fdset);
-        FD_SET(net_socket, &fdset);
-        timeout.tv_sec = 1;
-        timeout.tv_usec = 0;
-        if (select(net_socket + 1, &fdset, NULL, NULL, &timeout) == -1) continue;
-        stdin_ready = FD_ISSET(0, &fdset);
-#endif
-
         /* find time passed since last cycle */
         newtime = Sys_DoubleTime();
         time = newtime - oldtime;
@@ -527,5 +525,8 @@ int Q_main(int argc, const char **argv) {
 #endif
     }
 
+    socketExit();
+    if (SDL_WasInit(0))
+      SDL_Quit();
     return 0;
 }

@@ -115,7 +115,7 @@ int UDP_Init(void) {
     struct hostent *local;
     netadr_t addr;
 
-    if (COM_CheckParm("-noudp")) return -1;
+    /*if (COM_CheckParm("-noudp")) */return -1;
 
     /* determine my name & address, default to loopback */
     myAddr.ip.l = htonl(INADDR_LOOPBACK);
