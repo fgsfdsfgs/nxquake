@@ -1,6 +1,5 @@
 # NXQuake
-Switch port of [TyrQuake](https://disenchant.net/tyrquake/).
-Only contains NetQuake with software rendering.
+Switch port of [TyrQuake](https://disenchant.net/tyrquake/) (only the NetQuake part).
 
 ## Building
 You need:
