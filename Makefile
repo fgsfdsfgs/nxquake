@@ -41,7 +41,7 @@ SOURCES		:=	source source/gl
 DATA		:=	data
 INCLUDES	:=	include
 EXEFS_SRC	:=	exefs_src
-DEFINES	:=	-DTYR_VERSION=0.62-nx -DDEBUG -DNQ_HACK -DGLQUAKE
+DEFINES	:=	-DTYR_VERSION=0.62-nx -DNDEBUG -DNQ_HACK -DGLQUAKE
 #ROMFS	:=	romfs
 
 #---------------------------------------------------------------------------------
