@@ -8,6 +8,7 @@ You need:
 * latest versions of switch-sdl2, switch-mesa, switch-libdrm_nouveau.
 
 NOTE: building NXQuake currently (Sep 15 2018) requires building the latest commits of libnx and other aforementioned libraries. The current stable versions provided in the corresponding `(dkp-)pacman` packages might cause glitches and crashes in the hardware renderer.
+
 Run `make` in this directory to build `nxquake.nro`.
 
 ## Running
