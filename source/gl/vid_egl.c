@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <EGL/egl.h>
+#include <SDL2/sdl.h>
 
 #include "cmd.h"
 #include "console.h"
@@ -246,6 +247,8 @@ qboolean VID_SetMode(const qvidmode_t *mode, const byte *palette) {
     return true;
 }
 
+static SDL_Renderer *sdl_renderer;
+
 void VID_Init(const byte *palette) {
     int err;
     qvidmode_t *mode;
@@ -256,6 +259,14 @@ void VID_Init(const byte *palette) {
     VID_InitModeCvars();
 
     Cmd_AddCommand("vid_describemodes", VID_DescribeModes_f);
+
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
+        printf("SDL_VIDEO borked: %s\n", SDL_GetError());
+    int flags = SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN;
+    sdl_window = SDL_CreateWindow("", 0, 0, 1280, 720, flags);
+    if (!sdl_window) printf("sdl_window == NULL!\n%s\n", SDL_GetError());
+    SDL_Renderer *sdl_renderer = SDL_CreateRenderer(sdl_window, -1, 0);
+    if (!sdl_renderer) printf("sdl_renderer == NULL!\n%s\n", SDL_GetError());
 
     /* Init the default windowed mode */
     mode = modelist;
@@ -279,6 +290,8 @@ void VID_Init(const byte *palette) {
 }
 
 void VID_Shutdown(void) {
+    SDL_DestroyWindow(sdl_window);
+    SDL_DestroyRenderer(sdl_renderer);
     QGL_Deinit();
     DeinitEGL();
 }
