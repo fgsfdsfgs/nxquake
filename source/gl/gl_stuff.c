@@ -518,13 +518,13 @@ void qglPopMatrix(void) {
     if (m_selected == &m_modelview) {
         if (m_stack_mvn == 0)
             Sys_Error("qglPopMatrix(): pop from empty stack!");
-        glm_mat4_copy(m_stack_mv[m_stack_mvn], *m_selected);
         m_stack_mvn--;
+        glm_mat4_copy(m_stack_mv[m_stack_mvn], *m_selected);
     } else if (m_selected == &m_projection) {
         if (m_stack_pn == QGL_MSTACKLEN)
             Sys_Error("qglPushMatrix(): out of stack space!");
-        glm_mat4_copy(m_stack_p[m_stack_pn], *m_selected);
         m_stack_pn--;
+        glm_mat4_copy(m_stack_p[m_stack_pn], *m_selected);
     }
     mvp_modified = true;
 }
