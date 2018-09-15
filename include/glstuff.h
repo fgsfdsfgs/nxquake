@@ -45,6 +45,7 @@ typedef double GLdouble;
 #define GL_POLYGON GL_TRIANGLE_FAN
 #define GL_QUADS GL_TRIANGLE_FAN
 
+#define GL_COLOR 0x1800
 #define GL_SMOOTH 0x1D01
 #define GL_FLAT 0x1D00
 #define GL_MODULATE 0x2100

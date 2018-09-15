@@ -42,8 +42,8 @@ static int texenv_mask = 0;
 static int texcoord_state = 0;
 static int alpha_state = 0;
 static int color_state = 0;
-static GLfloat cur_color[4];
-static GLfloat cur_texcoord[2];
+static GLfloat cur_color[4] = {1.f, 1.f, 1.f, 1.f};
+static GLfloat cur_texcoord[2] = {0.f, 0.f};
 static GLint u_mvp[9];
 static GLint u_monocolor;
 static GLint u_modcolor[2];
@@ -208,9 +208,13 @@ void QGL_EnableGLState(int state) {
     switch (state) {
     case GL_TEXTURE_2D:
         if (!texcoord_state) {
-            state_mask += 0x01 + 0x02; // also enable color
-            color_state = 1;
+            state_mask += 0x01;
             texcoord_state = 1;
+        }
+    case GL_COLOR: // HACK
+        if (!color_state) {
+            state_mask += 0x02;
+            color_state = 1;
         }
         break;
     case GL_MODULATE:
@@ -235,9 +239,13 @@ void QGL_DisableGLState(int state) {
     switch (state) {
     case GL_TEXTURE_2D:
         if (texcoord_state) {
-            state_mask -= 0x01 + 0x02; // also disable color
-            color_state = 0;
+            state_mask -= 0x01; // also disable color
             texcoord_state = 0;
+        }
+    case GL_COLOR: // HACK
+        if (color_state) {
+            state_mask -= 0x02;
+            color_state = 0;
         }
         break;
     case GL_ALPHA_TEST:
@@ -269,13 +277,11 @@ static int m_stack_mvn = 1;
 static int m_stack_pn = 1;
 static qboolean mvp_modified = true;
 
-#pragma pack(push, 1)
 typedef struct {
     GLfloat pos[3];
     GLfloat uv[2];
     GLfloat color[4];
 } bufvert_t;
-#pragma pack(pop)
 
 static int imm_mode = -1;
 static int imm_numverts = 0;
@@ -296,8 +302,6 @@ qboolean QGL_Init(void) {
     glActiveTexture(GL_TEXTURE0);
 
     glEnableVertexAttribArray(0);
-    glEnableVertexAttribArray(1);
-    glEnableVertexAttribArray(2);
 
     return true;
 }
@@ -320,6 +324,21 @@ void qglBegin(GLenum prim) {
     imm_numverts = 0;
 }
 
+static inline void SetupAttribs(void) {
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].pos[0]));
+    GLint offset = 0;
+    if (texcoord_state) {
+      glEnableVertexAttribArray(1);
+      glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].uv[0]));
+      offset++;
+    }
+    if (color_state) {
+      offset++;
+      glEnableVertexAttribArray(offset);
+      glVertexAttribPointer(offset, 4, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].color[0]));
+    }
+}
+
 void qglEnd(void) {
     if (mvp_modified)
         glm_mat4_mul(m_projection, m_modelview, m_mvp);
@@ -338,10 +357,10 @@ void qglEnd(void) {
         glUniform4fv(u_monocolor, 1, cur_color);
 
     if (imm_mode > -1 && imm_numverts) {
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].pos[0]));
-        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].uv[0]));
-        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].color[0]));
+        SetupAttribs();
         glDrawArrays(imm_mode, 0, imm_numverts);
+        glDisableVertexAttribArray(1);
+        glDisableVertexAttribArray(2);
     }
 
     imm_vertp = imm_vertbuf;
@@ -458,14 +477,14 @@ void qglTexEnvi(GLenum target, GLenum pname, GLint param) {
 }
 
 void qglEnable(GLenum param) {
-    if (param == GL_ALPHA_TEST || param == GL_TEXTURE_2D)
+    if (param == GL_ALPHA_TEST || param == GL_TEXTURE_2D || param == GL_COLOR)
         QGL_EnableGLState(param);
     else
         glEnable(param);
 }
 
 void qglDisable(GLenum param) {
-    if (param == GL_ALPHA_TEST || param == GL_TEXTURE_2D)
+    if (param == GL_ALPHA_TEST || param == GL_TEXTURE_2D || param == GL_COLOR)
         QGL_DisableGLState(param);
     else
         glDisable(param);

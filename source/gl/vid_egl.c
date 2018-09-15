@@ -190,6 +190,7 @@ static void VID_InitGL(void) {
 
     setMesaConfig();
     InitEGL();
+    eglSwapInterval(s_display, 1);
 
     gl_vendor = (const char *)glGetString(GL_VENDOR);
     gl_renderer = (const char *)glGetString(GL_RENDERER);
