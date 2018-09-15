@@ -35,7 +35,8 @@ int Mod_FindInterval(const float *intervals, int numintervals, float time) {
     fullinterval = intervals[numintervals - 1];
     targettime = time - (int)(time / fullinterval) * fullinterval;
     for (i = 0; i < numintervals - 1; i++)
-        if (intervals[i] > targettime) break;
+        if (intervals[i] > targettime)
+            break;
 
     return i;
 }

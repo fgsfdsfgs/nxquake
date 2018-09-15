@@ -63,8 +63,9 @@ void R_RemoveEfrags(entity_t *ent) {
         prev = &ef->leaf->efrags;
         while (1) {
             walk = *prev;
-            if (!walk) break;
-            if (walk == ef) {  // remove this fragment
+            if (!walk)
+                break;
+            if (walk == ef) { // remove this fragment
                 *prev = ef->leafnext;
                 break;
             } else
@@ -99,7 +100,8 @@ void R_SplitEntityOnNode(mnode_t *node) {
     // add an efrag if the node is a leaf
 
     if (node->contents < 0) {
-        if (!r_pefragtopnode) r_pefragtopnode = node;
+        if (!r_pefragtopnode)
+            r_pefragtopnode = node;
 
         leaf = (mleaf_t *)node;
 
@@ -107,7 +109,7 @@ void R_SplitEntityOnNode(mnode_t *node) {
         ef = cl.free_efrags;
         if (!ef) {
             Con_Printf("Too many efrags!\n");
-            return;  // no free fragments...
+            return; // no free fragments...
         }
         cl.free_efrags = cl.free_efrags->entnext;
 
@@ -133,12 +135,15 @@ void R_SplitEntityOnNode(mnode_t *node) {
     if (sides == PSIDE_BOTH) {
         // split on this plane
         // if this is the first splitter of this bmodel, remember it
-        if (!r_pefragtopnode) r_pefragtopnode = node;
+        if (!r_pefragtopnode)
+            r_pefragtopnode = node;
     }
     // recurse down the contacted sides
-    if (sides & PSIDE_FRONT) R_SplitEntityOnNode(node->children[0]);
+    if (sides & PSIDE_FRONT)
+        R_SplitEntityOnNode(node->children[0]);
 
-    if (sides & PSIDE_BACK) R_SplitEntityOnNode(node->children[1]);
+    if (sides & PSIDE_BACK)
+        R_SplitEntityOnNode(node->children[1]);
 }
 
 #ifndef GLQUAKE
@@ -151,11 +156,14 @@ void R_SplitEntityOnNode2(mnode_t *node) {
     mplane_t *splitplane;
     int sides;
 
-    if (node->visframe != r_visframecount) return;
-    if (node->clipflags == BMODEL_FULLY_CLIPPED) return;
+    if (node->visframe != r_visframecount)
+        return;
+    if (node->clipflags == BMODEL_FULLY_CLIPPED)
+        return;
 
     if (node->contents < 0) {
-        if (node->contents != CONTENTS_SOLID) r_pefragtopnode = node;
+        if (node->contents != CONTENTS_SOLID)
+            r_pefragtopnode = node;
         // we've reached a non-solid leaf, so it's
         //  visible and not BSP clipped
         return;
@@ -183,7 +191,8 @@ R_AddEfrags
 ===========
 */
 void R_AddEfrags(entity_t *ent) {
-    if (!ent->model) return;
+    if (!ent->model)
+        return;
 
     r_addent = ent;
     lastlink = &ent->efrag;
@@ -212,18 +221,18 @@ void R_StoreEfrags(efrag_t **ppefrag) {
         pent = pefrag->entity;
         clmodel = pent->model;
         switch (clmodel->type) {
-            case mod_alias:
-            case mod_brush:
-            case mod_sprite:
-                if ((pent->visframe != r_framecount) && (cl_numvisedicts < MAX_VISEDICTS)) {
-                    /* mark that we've recorded this entity for this frame */
-                    pent->visframe = r_framecount;
-                    cl_visedicts[cl_numvisedicts++] = *pent;
-                }
-                ppefrag = &pefrag->leafnext;
-                break;
-            default:
-                Sys_Error("%s: Bad entity type %d", __func__, clmodel->type);
+        case mod_alias:
+        case mod_brush:
+        case mod_sprite:
+            if ((pent->visframe != r_framecount) && (cl_numvisedicts < MAX_VISEDICTS)) {
+                /* mark that we've recorded this entity for this frame */
+                pent->visframe = r_framecount;
+                cl_visedicts[cl_numvisedicts++] = *pent;
+            }
+            ppefrag = &pefrag->leafnext;
+            break;
+        default:
+            Sys_Error("%s: Bad entity type %d", __func__, clmodel->type);
         }
     }
 }
