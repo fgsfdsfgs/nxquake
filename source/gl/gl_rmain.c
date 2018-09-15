@@ -742,706 +742,706 @@ static void R_AliasCalcLight(const entity_t *entity, const vec3_t origin, const 
     if (CL_PlayerEntity(entity)) {
 #endif
 #ifdef QW_HACK
-        if (!strcmp(model->name, "progs/player.mdl")) {
+    if (!strcmp(model->name, "progs/player.mdl")) {
 #endif
-            if (ambientlight < 8)
-                ambientlight = shadelight = 8;
-        } else if (!strcmp(model->name, "progs/flame.mdl") || !strcmp(model->name, "progs/flame2.mdl")) {
-            // HACK HACK HACK -- no fullbright colors, so make torches full
-            // light
-            ambientlight = shadelight = 256;
-        }
-
-        shadequant = (int)(angles[1] * (SHADEDOT_QUANT / 360.0));
-        shadedots = r_avertexnormal_dots[shadequant & (SHADEDOT_QUANT - 1)];
-        shadelight /= 200.0;
-
-        angle = angles[1] / 180 * M_PI;
-        shadevector[0] = cos(-angle);
-        shadevector[1] = sin(-angle);
-        shadevector[2] = 1;
-        VectorNormalize(shadevector);
+        if (ambientlight < 8)
+            ambientlight = shadelight = 8;
+    } else if (!strcmp(model->name, "progs/flame.mdl") || !strcmp(model->name, "progs/flame2.mdl")) {
+        // HACK HACK HACK -- no fullbright colors, so make torches full
+        // light
+        ambientlight = shadelight = 256;
     }
 
+    shadequant = (int)(angles[1] * (SHADEDOT_QUANT / 360.0));
+    shadedots = r_avertexnormal_dots[shadequant & (SHADEDOT_QUANT - 1)];
+    shadelight /= 200.0;
+
+    angle = angles[1] / 180 * M_PI;
+    shadevector[0] = cos(-angle);
+    shadevector[1] = sin(-angle);
+    shadevector[2] = 1;
+    VectorNormalize(shadevector);
+}
+
+/*
+=================
+R_AliasDrawModel
+=================
+*/
+static void R_AliasDrawModel(entity_t * entity) {
+    const model_t *model = entity->model;
+    vec3_t origin, angles, mins, maxs;
+    aliashdr_t *aliashdr;
+
+    /* Calculate position and cull if out of view */
+    R_AliasCalcLerp(entity, origin, angles);
+    VectorAdd(origin, model->mins, mins);
+    VectorAdd(origin, model->maxs, maxs);
+    if (R_CullBox(mins, maxs))
+        return;
+
+    /* Calculate lighting at the lerp origin */
+    R_AliasCalcLight(entity, origin, angles);
+
+    /* locate the proper data */
+    aliashdr = Mod_Extradata(entity->model);
+
+    /* draw all the triangles */
+    c_alias_polys += aliashdr->numtris;
+    VectorCopy(origin, r_entorigin);
+
+    GL_DisableMultitexture();
+
+    glPushMatrix();
+    R_RotateForEntity(origin, angles);
+
+    /* double size of eyes, since they are really hard to see in gl */
+#ifdef NQ_HACK
+    if (!strcmp(model->name, "progs/eyes.mdl") && gl_doubleeyes.value) {
+#endif
+#ifdef QW_HACK
+    if (!strcmp(model->name, "progs/eyes.mdl")) {
+#endif
+        glTranslatef(aliashdr->scale_origin[0], aliashdr->scale_origin[1],
+                     aliashdr->scale_origin[2] - (22 + 8));
+        glScalef(aliashdr->scale[0] * 2, aliashdr->scale[1] * 2, aliashdr->scale[2] * 2);
+    } else {
+        glTranslatef(aliashdr->scale_origin[0], aliashdr->scale_origin[1], aliashdr->scale_origin[2]);
+        glScalef(aliashdr->scale[0], aliashdr->scale[1], aliashdr->scale[2]);
+    }
+
+    R_AliasSetupSkin(entity, aliashdr);
+
     /*
-    =================
-    R_AliasDrawModel
-    =================
-    */
-    static void R_AliasDrawModel(entity_t * entity) {
-        const model_t *model = entity->model;
-        vec3_t origin, angles, mins, maxs;
-        aliashdr_t *aliashdr;
+     * We can't dynamically colormap textures, so they are cached
+     * seperately for the players.  Heads are just uncolored.
+     */
+#ifdef NQ_HACK
+    if (entity->colormap != vid.colormap && !gl_nocolors.value) {
+        const int playernum = CL_PlayerEntity(entity);
+        if (playernum)
+            GL_Bind(playertextures[playernum - 1]);
+    }
+#endif
+#ifdef QW_HACK
+    if (entity->scoreboard && !gl_nocolors.value) {
+        const int playernum = entity->scoreboard - cl.players;
+        if (!entity->scoreboard->skin) {
+            Skin_Find(entity->scoreboard);
+            R_TranslatePlayerSkin(playernum);
+        }
+        if (playernum >= 0 && playernum < MAX_CLIENTS)
+            GL_Bind(playertextures[playernum]);
+    }
+#endif
 
-        /* Calculate position and cull if out of view */
-        R_AliasCalcLerp(entity, origin, angles);
-        VectorAdd(origin, model->mins, mins);
-        VectorAdd(origin, model->maxs, maxs);
-        if (R_CullBox(mins, maxs))
-            return;
+    if (gl_smoothmodels.value)
+        glShadeModel(GL_SMOOTH);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-        /* Calculate lighting at the lerp origin */
-        R_AliasCalcLight(entity, origin, angles);
+    if (gl_affinemodels.value)
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 
-        /* locate the proper data */
-        aliashdr = Mod_Extradata(entity->model);
+    R_AliasSetupFrame(entity, aliashdr);
 
-        /* draw all the triangles */
-        c_alias_polys += aliashdr->numtris;
-        VectorCopy(origin, r_entorigin);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-        GL_DisableMultitexture();
+    glShadeModel(GL_FLAT);
+    if (gl_affinemodels.value)
+        glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
+    glPopMatrix();
+
+    if (r_shadows.value) {
         glPushMatrix();
         R_RotateForEntity(origin, angles);
+        qglDisable(GL_TEXTURE_2D);
+        qglEnable(GL_BLEND);
+        glColor4f(0, 0, 0, 0.5);
+        GL_AliasDrawShadow(entity, aliashdr, lastposenum);
+        qglEnable(GL_TEXTURE_2D);
+        qglDisable(GL_BLEND);
+        glColor4f(1, 1, 1, 1);
+        glPopMatrix();
+    }
+}
 
-        /* double size of eyes, since they are really hard to see in gl */
-#ifdef NQ_HACK
-        if (!strcmp(model->name, "progs/eyes.mdl") && gl_doubleeyes.value) {
-#endif
-#ifdef QW_HACK
-            if (!strcmp(model->name, "progs/eyes.mdl")) {
-#endif
-                glTranslatef(aliashdr->scale_origin[0], aliashdr->scale_origin[1],
-                             aliashdr->scale_origin[2] - (22 + 8));
-                glScalef(aliashdr->scale[0] * 2, aliashdr->scale[1] * 2, aliashdr->scale[2] * 2);
-            } else {
-                glTranslatef(aliashdr->scale_origin[0], aliashdr->scale_origin[1], aliashdr->scale_origin[2]);
-                glScalef(aliashdr->scale[0], aliashdr->scale[1], aliashdr->scale[2]);
-            }
+//=============================================================================
 
-            R_AliasSetupSkin(entity, aliashdr);
+/*
+===============
+R_MarkLeaves
+===============
+*/
+void R_MarkLeaves(void) {
+    const leafbits_t *pvs;
+    leafblock_t check;
+    int leafnum;
+    mnode_t *node;
+    mleaf_t *leaf;
 
-            /*
-             * We can't dynamically colormap textures, so they are cached
-             * seperately for the players.  Heads are just uncolored.
-             */
-#ifdef NQ_HACK
-            if (entity->colormap != vid.colormap && !gl_nocolors.value) {
-                const int playernum = CL_PlayerEntity(entity);
-                if (playernum)
-                    GL_Bind(playertextures[playernum - 1]);
-            }
-#endif
-#ifdef QW_HACK
-            if (entity->scoreboard && !gl_nocolors.value) {
-                const int playernum = entity->scoreboard - cl.players;
-                if (!entity->scoreboard->skin) {
-                    Skin_Find(entity->scoreboard);
-                    R_TranslatePlayerSkin(playernum);
-                }
-                if (playernum >= 0 && playernum < MAX_CLIENTS)
-                    GL_Bind(playertextures[playernum]);
-            }
-#endif
+    if (r_oldviewleaf == r_viewleaf && !r_novis.value)
+        return;
 
-            if (gl_smoothmodels.value)
-                glShadeModel(GL_SMOOTH);
-            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    if (mirror)
+        return;
 
-            if (gl_affinemodels.value)
-                glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
+    r_visframecount++;
+    r_oldviewleaf = r_viewleaf;
 
-            R_AliasSetupFrame(entity, aliashdr);
+    /* Pass the zero leaf to get the all visible set */
+    leaf = r_novis.value ? cl.worldmodel->leafs : r_viewleaf;
 
-            glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    pvs = Mod_LeafPVS(cl.worldmodel, leaf);
+    foreach_leafbit(pvs, leafnum, check) {
+        node = (mnode_t *)&cl.worldmodel->leafs[leafnum + 1];
+        do {
+            if (node->visframe == r_visframecount)
+                break;
+            node->visframe = r_visframecount;
+            node = node->parent;
+        } while (node);
+    }
+}
 
-            glShadeModel(GL_FLAT);
-            if (gl_affinemodels.value)
-                glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+/*
+====================
+R_DrawEntitiesOnList
+====================
+*/
+static void R_DrawEntitiesOnList(void) {
+    entity_t *e;
+    int i;
 
-            glPopMatrix();
+    if (!r_drawentities.value)
+        return;
 
-            if (r_shadows.value) {
-                glPushMatrix();
-                R_RotateForEntity(origin, angles);
-                qglDisable(GL_TEXTURE_2D);
-                qglEnable(GL_BLEND);
-                glColor4f(0, 0, 0, 0.5);
-                GL_AliasDrawShadow(entity, aliashdr, lastposenum);
-                qglEnable(GL_TEXTURE_2D);
-                qglDisable(GL_BLEND);
-                glColor4f(1, 1, 1, 1);
-                glPopMatrix();
-            }
-        }
-
-        //=============================================================================
-
-        /*
-        ===============
-        R_MarkLeaves
-        ===============
-        */
-        void R_MarkLeaves(void) {
-            const leafbits_t *pvs;
-            leafblock_t check;
-            int leafnum;
-            mnode_t *node;
-            mleaf_t *leaf;
-
-            if (r_oldviewleaf == r_viewleaf && !r_novis.value)
-                return;
-
-            if (mirror)
-                return;
-
-            r_visframecount++;
-            r_oldviewleaf = r_viewleaf;
-
-            /* Pass the zero leaf to get the all visible set */
-            leaf = r_novis.value ? cl.worldmodel->leafs : r_viewleaf;
-
-            pvs = Mod_LeafPVS(cl.worldmodel, leaf);
-            foreach_leafbit(pvs, leafnum, check) {
-                node = (mnode_t *)&cl.worldmodel->leafs[leafnum + 1];
-                do {
-                    if (node->visframe == r_visframecount)
-                        break;
-                    node->visframe = r_visframecount;
-                    node = node->parent;
-                } while (node);
-            }
-        }
-
-        /*
-        ====================
-        R_DrawEntitiesOnList
-        ====================
-        */
-        static void R_DrawEntitiesOnList(void) {
-            entity_t *e;
-            int i;
-
-            if (!r_drawentities.value)
-                return;
-
-            // draw sprites seperately, because of alpha blending
-            for (i = 0; i < cl_numvisedicts; i++) {
-                e = &cl_visedicts[i];
-                switch (e->model->type) {
-                case mod_alias:
-                    R_AliasDrawModel(e);
-                    break;
-                case mod_brush:
-                    R_DrawBrushModel(e);
-                    break;
-                default:
-                    break;
-                }
-            }
-
-            for (i = 0; i < cl_numvisedicts; i++) {
-                e = &cl_visedicts[i];
-                switch (e->model->type) {
-                case mod_sprite:
-                    R_DrawSpriteModel(e);
-                    break;
-                default:
-                    break;
-                }
-            }
-        }
-
-        /*
-        =============
-        R_DrawViewModel
-        =============
-        */
-        static void R_DrawViewModel(void) {
-            float ambient[4], diffuse[4];
-            int j;
-            int lnum;
-            vec3_t dist;
-            float add;
-            dlight_t *dl;
-            int ambientlight, shadelight;
-            entity_t *e;
-
-#ifdef NQ_HACK
-            if (!r_drawviewmodel.value)
-                return;
-
-            if (chase_active.value)
-                return;
-#endif
-#ifdef QW_HACK
-            if (!r_drawviewmodel.value || !Cam_DrawViewModel())
-                return;
-#endif
-
-            if (envmap)
-                return;
-
-            if (!r_drawentities.value)
-                return;
-
-            if (cl.stats[STAT_ITEMS] & IT_INVISIBILITY)
-                return;
-
-            if (cl.stats[STAT_HEALTH] <= 0)
-                return;
-
-            e = &cl.viewent;
-            if (!e->model)
-                return;
-
-            j = R_LightPoint(e->origin);
-
-            if (j < 24)
-                j = 24; // always give some light on gun
-            ambientlight = j;
-            shadelight = j;
-
-            // add dynamic lights
-            for (lnum = 0; lnum < MAX_DLIGHTS; lnum++) {
-                dl = &cl_dlights[lnum];
-                if (!dl->radius)
-                    continue;
-                if (!dl->radius)
-                    continue;
-                if (dl->die < cl.time)
-                    continue;
-
-                VectorSubtract(e->origin, dl->origin, dist);
-                add = dl->radius - Length(dist);
-                if (add > 0)
-                    ambientlight += add;
-            }
-
-            ambient[0] = ambient[1] = ambient[2] = ambient[3] = (float)ambientlight / 128;
-            diffuse[0] = diffuse[1] = diffuse[2] = diffuse[3] = (float)shadelight / 128;
-
-            // hack the depth range to prevent view model from poking into walls
-            glDepthRange(gldepthmin, gldepthmin + 0.3 * (gldepthmax - gldepthmin));
+    // draw sprites seperately, because of alpha blending
+    for (i = 0; i < cl_numvisedicts; i++) {
+        e = &cl_visedicts[i];
+        switch (e->model->type) {
+        case mod_alias:
             R_AliasDrawModel(e);
-            glDepthRange(gldepthmin, gldepthmax);
+            break;
+        case mod_brush:
+            R_DrawBrushModel(e);
+            break;
+        default:
+            break;
+        }
+    }
+
+    for (i = 0; i < cl_numvisedicts; i++) {
+        e = &cl_visedicts[i];
+        switch (e->model->type) {
+        case mod_sprite:
+            R_DrawSpriteModel(e);
+            break;
+        default:
+            break;
+        }
+    }
+}
+
+/*
+=============
+R_DrawViewModel
+=============
+*/
+static void R_DrawViewModel(void) {
+    float ambient[4], diffuse[4];
+    int j;
+    int lnum;
+    vec3_t dist;
+    float add;
+    dlight_t *dl;
+    int ambientlight, shadelight;
+    entity_t *e;
+
+#ifdef NQ_HACK
+    if (!r_drawviewmodel.value)
+        return;
+
+    if (chase_active.value)
+        return;
+#endif
+#ifdef QW_HACK
+    if (!r_drawviewmodel.value || !Cam_DrawViewModel())
+        return;
+#endif
+
+    if (envmap)
+        return;
+
+    if (!r_drawentities.value)
+        return;
+
+    if (cl.stats[STAT_ITEMS] & IT_INVISIBILITY)
+        return;
+
+    if (cl.stats[STAT_HEALTH] <= 0)
+        return;
+
+    e = &cl.viewent;
+    if (!e->model)
+        return;
+
+    j = R_LightPoint(e->origin);
+
+    if (j < 24)
+        j = 24; // always give some light on gun
+    ambientlight = j;
+    shadelight = j;
+
+    // add dynamic lights
+    for (lnum = 0; lnum < MAX_DLIGHTS; lnum++) {
+        dl = &cl_dlights[lnum];
+        if (!dl->radius)
+            continue;
+        if (!dl->radius)
+            continue;
+        if (dl->die < cl.time)
+            continue;
+
+        VectorSubtract(e->origin, dl->origin, dist);
+        add = dl->radius - Length(dist);
+        if (add > 0)
+            ambientlight += add;
+    }
+
+    ambient[0] = ambient[1] = ambient[2] = ambient[3] = (float)ambientlight / 128;
+    diffuse[0] = diffuse[1] = diffuse[2] = diffuse[3] = (float)shadelight / 128;
+
+    // hack the depth range to prevent view model from poking into walls
+    glDepthRange(gldepthmin, gldepthmin + 0.3 * (gldepthmax - gldepthmin));
+    R_AliasDrawModel(e);
+    glDepthRange(gldepthmin, gldepthmax);
+}
+
+/*
+ * GL_DrawBlendPoly
+ * - Render a polygon covering the whole screen
+ * - Used for full-screen color blending and approximated gamma
+ * correction
+ */
+static void GL_DrawBlendPoly(void) {
+    glBegin(GL_QUADS);
+    glVertex3f(10, 100, 100);
+    glVertex3f(10, -100, 100);
+    glVertex3f(10, -100, -100);
+    glVertex3f(10, 100, -100);
+    glEnd();
+}
+
+/*
+============
+R_PolyBlend
+============
+*/
+static void R_PolyBlend(void) {
+    float gamma = 1.0;
+
+    if (!VID_IsFullScreen() || (!VID_SetGammaRamp && _gl_allowgammafallback.value)) {
+        gamma = v_gamma.value * v_gamma.value;
+        if (gamma < 0.25)
+            gamma = 0.25;
+        else if (gamma > 1.0)
+            gamma = 1.0;
+    }
+
+    if ((gl_polyblend.value && v_blend[3]) || gamma < 1.0) {
+        GL_DisableMultitexture();
+
+        qglDisable(GL_ALPHA_TEST);
+        qglEnable(GL_BLEND);
+        qglDisable(GL_DEPTH_TEST);
+        qglDisable(GL_TEXTURE_2D);
+
+        glLoadIdentity();
+        glRotatef(-90, 1, 0, 0); // put Z going up
+        glRotatef(90, 0, 0, 1);  // put Z going up
+
+        if (gl_polyblend.value && v_blend[3]) {
+            glColor4fv(v_blend);
+            GL_DrawBlendPoly();
+        }
+        if (gamma < 1.0) {
+            glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
+            glColor4f(1, 1, 1, gamma);
+            GL_DrawBlendPoly();
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
 
-        /*
-         * GL_DrawBlendPoly
-         * - Render a polygon covering the whole screen
-         * - Used for full-screen color blending and approximated gamma
-         * correction
-         */
-        static void GL_DrawBlendPoly(void) {
-            glBegin(GL_QUADS);
-            glVertex3f(10, 100, 100);
-            glVertex3f(10, -100, 100);
-            glVertex3f(10, -100, -100);
-            glVertex3f(10, 100, -100);
-            glEnd();
-        }
+        qglDisable(GL_BLEND);
+        qglEnable(GL_TEXTURE_2D);
+        qglEnable(GL_ALPHA_TEST);
+    }
+}
 
-        /*
-        ============
-        R_PolyBlend
-        ============
-        */
-        static void R_PolyBlend(void) {
-            float gamma = 1.0;
+static void R_SetFrustum(void) {
+    int i;
 
-            if (!VID_IsFullScreen() || (!VID_SetGammaRamp && _gl_allowgammafallback.value)) {
-                gamma = v_gamma.value * v_gamma.value;
-                if (gamma < 0.25)
-                    gamma = 0.25;
-                else if (gamma > 1.0)
-                    gamma = 1.0;
-            }
+    // FIXME - organise better?
+    if (r_lockfrustum.value)
+        return;
 
-            if ((gl_polyblend.value && v_blend[3]) || gamma < 1.0) {
-                GL_DisableMultitexture();
+    if (r_refdef.fov_x == 90) {
+        // front side is visible
 
-                qglDisable(GL_ALPHA_TEST);
-                qglEnable(GL_BLEND);
-                qglDisable(GL_DEPTH_TEST);
-                qglDisable(GL_TEXTURE_2D);
+        VectorAdd(vpn, vright, frustum[0].normal);
+        VectorSubtract(vpn, vright, frustum[1].normal);
 
-                glLoadIdentity();
-                glRotatef(-90, 1, 0, 0); // put Z going up
-                glRotatef(90, 0, 0, 1);  // put Z going up
+        VectorAdd(vpn, vup, frustum[2].normal);
+        VectorSubtract(vpn, vup, frustum[3].normal);
+    } else {
+        // rotate VPN right by FOV_X/2 degrees
+        RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90 - r_refdef.fov_x / 2));
+        // rotate VPN left by FOV_X/2 degrees
+        RotatePointAroundVector(frustum[1].normal, vup, vpn, 90 - r_refdef.fov_x / 2);
+        // rotate VPN up by FOV_X/2 degrees
+        RotatePointAroundVector(frustum[2].normal, vright, vpn, 90 - r_refdef.fov_y / 2);
+        // rotate VPN down by FOV_X/2 degrees
+        RotatePointAroundVector(frustum[3].normal, vright, vpn, -(90 - r_refdef.fov_y / 2));
+    }
 
-                if (gl_polyblend.value && v_blend[3]) {
-                    glColor4fv(v_blend);
-                    GL_DrawBlendPoly();
-                }
-                if (gamma < 1.0) {
-                    glBlendFunc(GL_DST_COLOR, GL_ONE_MINUS_SRC_ALPHA);
-                    glColor4f(1, 1, 1, gamma);
-                    GL_DrawBlendPoly();
-                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-                }
+    for (i = 0; i < 4; i++) {
+        frustum[i].type = PLANE_ANYZ; // FIXME - true for all angles?
+        frustum[i].dist = DotProduct(r_origin, frustum[i].normal);
+        frustum[i].signbits = SignbitsForPlane(&frustum[i]);
+    }
+}
 
-                qglDisable(GL_BLEND);
-                qglEnable(GL_TEXTURE_2D);
-                qglEnable(GL_ALPHA_TEST);
-            }
-        }
-
-        static void R_SetFrustum(void) {
-            int i;
-
-            // FIXME - organise better?
-            if (r_lockfrustum.value)
-                return;
-
-            if (r_refdef.fov_x == 90) {
-                // front side is visible
-
-                VectorAdd(vpn, vright, frustum[0].normal);
-                VectorSubtract(vpn, vright, frustum[1].normal);
-
-                VectorAdd(vpn, vup, frustum[2].normal);
-                VectorSubtract(vpn, vup, frustum[3].normal);
-            } else {
-                // rotate VPN right by FOV_X/2 degrees
-                RotatePointAroundVector(frustum[0].normal, vup, vpn, -(90 - r_refdef.fov_x / 2));
-                // rotate VPN left by FOV_X/2 degrees
-                RotatePointAroundVector(frustum[1].normal, vup, vpn, 90 - r_refdef.fov_x / 2);
-                // rotate VPN up by FOV_X/2 degrees
-                RotatePointAroundVector(frustum[2].normal, vright, vpn, 90 - r_refdef.fov_y / 2);
-                // rotate VPN down by FOV_X/2 degrees
-                RotatePointAroundVector(frustum[3].normal, vright, vpn, -(90 - r_refdef.fov_y / 2));
-            }
-
-            for (i = 0; i < 4; i++) {
-                frustum[i].type = PLANE_ANYZ; // FIXME - true for all angles?
-                frustum[i].dist = DotProduct(r_origin, frustum[i].normal);
-                frustum[i].signbits = SignbitsForPlane(&frustum[i]);
-            }
-        }
-
-        /*
-        ===============
-        R_SetupFrame
-        ===============
-        */
-        void R_SetupFrame(void) {
+/*
+===============
+R_SetupFrame
+===============
+*/
+void R_SetupFrame(void) {
 // don't allow cheats in multiplayer
 #ifdef NQ_HACK
-            if (cl.maxclients > 1)
-                Cvar_Set("r_fullbright", "0");
+    if (cl.maxclients > 1)
+        Cvar_Set("r_fullbright", "0");
 #endif
 #ifdef QW_HACK
-            r_fullbright.value = 0;
-            r_lightmap.value = 0;
-            if (!atoi(Info_ValueForKey(cl.serverinfo, "watervis")))
-                r_wateralpha.value = 1;
+    r_fullbright.value = 0;
+    r_lightmap.value = 0;
+    if (!atoi(Info_ValueForKey(cl.serverinfo, "watervis")))
+        r_wateralpha.value = 1;
 #endif
 
-            R_AnimateLight();
+    R_AnimateLight();
 
-            r_framecount++;
+    r_framecount++;
 
-            // build the transformation matrix for the given view angles
-            VectorCopy(r_refdef.vieworg, r_origin);
+    // build the transformation matrix for the given view angles
+    VectorCopy(r_refdef.vieworg, r_origin);
 
-            AngleVectors(r_refdef.viewangles, vpn, vright, vup);
+    AngleVectors(r_refdef.viewangles, vpn, vright, vup);
 
-            // current viewleaf
-            r_oldviewleaf = r_viewleaf;
-            if (!r_viewleaf || !r_lockpvs.value)
-                r_viewleaf = Mod_PointInLeaf(cl.worldmodel, r_origin);
+    // current viewleaf
+    r_oldviewleaf = r_viewleaf;
+    if (!r_viewleaf || !r_lockpvs.value)
+        r_viewleaf = Mod_PointInLeaf(cl.worldmodel, r_origin);
 
-            // color shifting for water, etc.
-            V_SetContentsColor(r_viewleaf->contents);
-            V_CalcBlend();
+    // color shifting for water, etc.
+    V_SetContentsColor(r_viewleaf->contents);
+    V_CalcBlend();
 
-            // surface cache isn't thrashing (don't have one in GL?)
-            r_cache_thrash = false;
+    // surface cache isn't thrashing (don't have one in GL?)
+    r_cache_thrash = false;
 
-            // reset count of polys for this frame
-            c_brush_polys = 0;
-            c_alias_polys = 0;
-            c_lightmaps_uploaded = 0;
-        }
+    // reset count of polys for this frame
+    c_brush_polys = 0;
+    c_alias_polys = 0;
+    c_lightmaps_uploaded = 0;
+}
 
-        static void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar) {
-            GLdouble xmin, xmax, ymin, ymax;
+static void MYgluPerspective(GLdouble fovy, GLdouble aspect, GLdouble zNear, GLdouble zFar) {
+    GLdouble xmin, xmax, ymin, ymax;
 
-            ymax = zNear * tan(fovy * M_PI / 360.0);
-            ymin = -ymax;
+    ymax = zNear * tan(fovy * M_PI / 360.0);
+    ymin = -ymax;
 
-            xmin = ymin * aspect;
-            xmax = ymax * aspect;
+    xmin = ymin * aspect;
+    xmax = ymax * aspect;
 
-            glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
-        }
+    glFrustum(xmin, xmax, ymin, ymax, zNear, zFar);
+}
 
-        /*
-        =============
-        R_SetupGL
-        =============
-        */
-        static void R_SetupGL(void) {
-            float screenaspect;
-            int x, x2, y2, y, w, h;
+/*
+=============
+R_SetupGL
+=============
+*/
+static void R_SetupGL(void) {
+    float screenaspect;
+    int x, x2, y2, y, w, h;
 
-            //
-            // set up viewpoint
-            //
-            glMatrixMode(GL_PROJECTION);
-            glLoadIdentity();
-            x = r_refdef.vrect.x * glwidth / vid.width;
-            x2 = (r_refdef.vrect.x + r_refdef.vrect.width) * glwidth / vid.width;
-            y = (vid.height - r_refdef.vrect.y) * glheight / vid.height;
-            y2 = (vid.height - (r_refdef.vrect.y + r_refdef.vrect.height)) * glheight / vid.height;
+    //
+    // set up viewpoint
+    //
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    x = r_refdef.vrect.x * glwidth / vid.width;
+    x2 = (r_refdef.vrect.x + r_refdef.vrect.width) * glwidth / vid.width;
+    y = (vid.height - r_refdef.vrect.y) * glheight / vid.height;
+    y2 = (vid.height - (r_refdef.vrect.y + r_refdef.vrect.height)) * glheight / vid.height;
 
-            // fudge around because of frac screen scale
-            // FIXME: well not fix, but figure out why this is done...
-            if (x > 0)
-                x--;
-            if (x2 < glwidth)
-                x2++;
-            if (y2 < 0)
-                y2--;
-            if (y < glheight)
-                y++;
+    // fudge around because of frac screen scale
+    // FIXME: well not fix, but figure out why this is done...
+    if (x > 0)
+        x--;
+    if (x2 < glwidth)
+        x2++;
+    if (y2 < 0)
+        y2--;
+    if (y < glheight)
+        y++;
 
-            w = x2 - x;
-            h = y - y2;
+    w = x2 - x;
+    h = y - y2;
 
-            // FIXME: Skybox? Regular Quake sky?
-            if (envmap) {
-                x = y2 = 0;
-                w = h = 256;
-            }
+    // FIXME: Skybox? Regular Quake sky?
+    if (envmap) {
+        x = y2 = 0;
+        w = h = 256;
+    }
 
-            glViewport(glx + x, gly + y2, w, h);
-            screenaspect = (float)r_refdef.vrect.width / r_refdef.vrect.height;
+    glViewport(glx + x, gly + y2, w, h);
+    screenaspect = (float)r_refdef.vrect.width / r_refdef.vrect.height;
 
-            // FIXME - wtf is all this about?
-            // yfov =
-            // 2*atan((float)r_refdef.vrect.height/r_refdef.vrect.width)*180/M_PI;
-            // yfov = (2.0 * tan (scr_fov.value/360*M_PI)) / screenaspect; yfov
-            // =
-            // 2*atan((float)r_refdef.vrect.height/r_refdef.vrect.width)*(scr_fov.value*2)/M_PI;
-            // MYgluPerspective (yfov,  screenaspect,  4,  4096);
+    // FIXME - wtf is all this about?
+    // yfov =
+    // 2*atan((float)r_refdef.vrect.height/r_refdef.vrect.width)*180/M_PI;
+    // yfov = (2.0 * tan (scr_fov.value/360*M_PI)) / screenaspect; yfov
+    // =
+    // 2*atan((float)r_refdef.vrect.height/r_refdef.vrect.width)*(scr_fov.value*2)/M_PI;
+    // MYgluPerspective (yfov,  screenaspect,  4,  4096);
 
-            // FIXME - set depth dynamically for improved depth precision in
-            // smaller
-            //         spaces
-            // MYgluPerspective (r_refdef.fov_y, screenaspect, 4, 4096);
-            MYgluPerspective(r_refdef.fov_y, screenaspect, 4, 6144);
+    // FIXME - set depth dynamically for improved depth precision in
+    // smaller
+    //         spaces
+    // MYgluPerspective (r_refdef.fov_y, screenaspect, 4, 4096);
+    MYgluPerspective(r_refdef.fov_y, screenaspect, 4, 6144);
 
-            if (mirror) {
-                if (mirror_plane->normal[2])
-                    glScalef(1, -1, 1);
-                else
-                    glScalef(-1, 1, 1);
-                glCullFace(GL_BACK);
-            } else
-                glCullFace(GL_FRONT);
+    if (mirror) {
+        if (mirror_plane->normal[2])
+            glScalef(1, -1, 1);
+        else
+            glScalef(-1, 1, 1);
+        glCullFace(GL_BACK);
+    } else
+        glCullFace(GL_FRONT);
 
-            glMatrixMode(GL_MODELVIEW);
-            glLoadIdentity();
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
 
-            glRotatef(-90, 1, 0, 0); // put Z going up
-            glRotatef(90, 0, 0, 1);  // put Z going up
-            glRotatef(-r_refdef.viewangles[2], 1, 0, 0);
-            glRotatef(-r_refdef.viewangles[0], 0, 1, 0);
-            glRotatef(-r_refdef.viewangles[1], 0, 0, 1);
-            glTranslatef(-r_refdef.vieworg[0], -r_refdef.vieworg[1], -r_refdef.vieworg[2]);
+    glRotatef(-90, 1, 0, 0); // put Z going up
+    glRotatef(90, 0, 0, 1);  // put Z going up
+    glRotatef(-r_refdef.viewangles[2], 1, 0, 0);
+    glRotatef(-r_refdef.viewangles[0], 0, 1, 0);
+    glRotatef(-r_refdef.viewangles[1], 0, 0, 1);
+    glTranslatef(-r_refdef.vieworg[0], -r_refdef.vieworg[1], -r_refdef.vieworg[2]);
 
-            qglGetFloatv(GL_MODELVIEW_MATRIX, r_world_matrix);
+    qglGetFloatv(GL_MODELVIEW_MATRIX, r_world_matrix);
 
-            //
-            // set drawing parms
-            //
-            if (gl_cull.value)
-                qglEnable(GL_CULL_FACE);
-            else
-                qglDisable(GL_CULL_FACE);
+    //
+    // set drawing parms
+    //
+    if (gl_cull.value)
+        qglEnable(GL_CULL_FACE);
+    else
+        qglDisable(GL_CULL_FACE);
 
-            qglDisable(GL_BLEND);
-            qglDisable(GL_ALPHA_TEST);
-            qglEnable(GL_DEPTH_TEST);
-        }
+    qglDisable(GL_BLEND);
+    qglDisable(GL_ALPHA_TEST);
+    qglEnable(GL_DEPTH_TEST);
+}
 
-        /*
-        ================
-        R_RenderScene
+/*
+================
+R_RenderScene
 
-        r_refdef must be set before the first call
-        ================
-        */
-        static void R_RenderScene(void) {
-            R_SetupFrame();
-            R_SetFrustum();
-            R_SetupGL();
-            R_MarkLeaves();  // done here so we know if we're in water
-            R_DrawWorld();   // adds static entities to the list
-            S_ExtraUpdate(); // don't let sound get messed up if going slow
-            R_DrawEntitiesOnList();
-            GL_DisableMultitexture();
-            R_RenderDlights();
-            R_DrawParticles();
-        }
+r_refdef must be set before the first call
+================
+*/
+static void R_RenderScene(void) {
+    R_SetupFrame();
+    R_SetFrustum();
+    R_SetupGL();
+    R_MarkLeaves();  // done here so we know if we're in water
+    R_DrawWorld();   // adds static entities to the list
+    S_ExtraUpdate(); // don't let sound get messed up if going slow
+    R_DrawEntitiesOnList();
+    GL_DisableMultitexture();
+    R_RenderDlights();
+    R_DrawParticles();
+}
 
-        /*
-        =============
-        R_Clear
-        =============
-        */
-        static void R_Clear(void) {
-            if (r_mirroralpha.value != 1.0) {
-                if (gl_clear.value)
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                else
-                    glClear(GL_DEPTH_BUFFER_BIT);
-                gldepthmin = 0;
-                gldepthmax = 0.5;
-                glDepthFunc(GL_LEQUAL);
-            } else if (gl_ztrick.value) {
-                static unsigned int trickframe = 0;
+/*
+=============
+R_Clear
+=============
+*/
+static void R_Clear(void) {
+    if (r_mirroralpha.value != 1.0) {
+        if (gl_clear.value)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        else
+            glClear(GL_DEPTH_BUFFER_BIT);
+        gldepthmin = 0;
+        gldepthmax = 0.5;
+        glDepthFunc(GL_LEQUAL);
+    } else if (gl_ztrick.value) {
+        static unsigned int trickframe = 0;
 
-                if (gl_clear.value)
-                    glClear(GL_COLOR_BUFFER_BIT);
+        if (gl_clear.value)
+            glClear(GL_COLOR_BUFFER_BIT);
 
-                trickframe++;
-                if (trickframe & 1) {
-                    gldepthmin = 0;
-                    gldepthmax = 0.49999;
-                    glDepthFunc(GL_LEQUAL);
-                } else {
-                    gldepthmin = 1;
-                    gldepthmax = 0.5;
-                    glDepthFunc(GL_GEQUAL);
-                }
-            } else {
-                if (gl_clear.value)
-                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-                else
-                    glClear(GL_DEPTH_BUFFER_BIT);
-                gldepthmin = 0;
-                gldepthmax = 1;
-                glDepthFunc(GL_LEQUAL);
-            }
-
-            glDepthRange(gldepthmin, gldepthmax);
-
-            if (gl_zfix.value) {
-                if (gldepthmax > gldepthmin)
-                    glPolygonOffset(1, 1);
-                else
-                    glPolygonOffset(-1, -1);
-            }
-        }
-
-#ifdef NQ_HACK /* Mirrors disabled for now in QW */
-        /*
-        =============
-        R_Mirror
-        =============
-        */
-        static void R_Mirror(void) {
-            float d;
-            msurface_t *s;
-            entity_t *ent;
-
-            if (!mirror)
-                return;
-
-            memcpy(r_base_world_matrix, r_world_matrix, sizeof(r_base_world_matrix));
-
-            d = DotProduct(r_refdef.vieworg, mirror_plane->normal) - mirror_plane->dist;
-            VectorMA(r_refdef.vieworg, -2 * d, mirror_plane->normal, r_refdef.vieworg);
-
-            d = DotProduct(vpn, mirror_plane->normal);
-            VectorMA(vpn, -2 * d, mirror_plane->normal, vpn);
-
-            r_refdef.viewangles[0] = -asin(vpn[2]) / M_PI * 180;
-            r_refdef.viewangles[1] = atan2(vpn[1], vpn[0]) / M_PI * 180;
-            r_refdef.viewangles[2] = -r_refdef.viewangles[2];
-
-            /* Add the player to visedicts they can see their reflection */
-            ent = &cl_entities[cl.viewentity];
-            if (cl_numvisedicts < MAX_VISEDICTS) {
-                cl_visedicts[cl_numvisedicts] = *ent;
-                cl_numvisedicts++;
-            }
-
-            gldepthmin = 0.5;
-            gldepthmax = 1;
-            glDepthRange(gldepthmin, gldepthmax);
-            glDepthFunc(GL_LEQUAL);
-
-            R_RenderScene();
-            R_DrawWaterSurfaces();
-
+        trickframe++;
+        if (trickframe & 1) {
             gldepthmin = 0;
-            gldepthmax = 0.5;
-            glDepthRange(gldepthmin, gldepthmax);
+            gldepthmax = 0.49999;
             glDepthFunc(GL_LEQUAL);
-
-            // blend on top
-            qglEnable(GL_BLEND);
-            glMatrixMode(GL_PROJECTION);
-            if (mirror_plane->normal[2])
-                glScalef(1, -1, 1);
-            else
-                glScalef(-1, 1, 1);
-            glCullFace(GL_FRONT);
-            glMatrixMode(GL_MODELVIEW);
-
-            glLoadMatrixf(r_base_world_matrix);
-
-            glColor4f(1, 1, 1, r_mirroralpha.value);
-            s = cl.worldmodel->textures[mirrortexturenum]->texturechain;
-            for (; s; s = s->texturechain)
-                R_RenderBrushPoly(&r_worldentity, s);
-            cl.worldmodel->textures[mirrortexturenum]->texturechain = NULL;
-            qglDisable(GL_BLEND);
-            glColor4f(1, 1, 1, 1);
+        } else {
+            gldepthmin = 1;
+            gldepthmax = 0.5;
+            glDepthFunc(GL_GEQUAL);
         }
-#endif
+    } else {
+        if (gl_clear.value)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        else
+            glClear(GL_DEPTH_BUFFER_BIT);
+        gldepthmin = 0;
+        gldepthmax = 1;
+        glDepthFunc(GL_LEQUAL);
+    }
 
-        /*
-        ================
-        R_RenderView
+    glDepthRange(gldepthmin, gldepthmax);
 
-        r_refdef must be set before the first call
-        ================
-        */
-        void R_RenderView(void) {
-            double time1 = 0, time2;
-
-            if (r_norefresh.value)
-                return;
-
-            if (!r_worldentity.model || !cl.worldmodel)
-                Sys_Error("%s: NULL worldmodel", __func__);
-
-            if (gl_finish.value || r_speeds.value)
-                glFinish();
-
-            if (r_speeds.value) {
-                time1 = Sys_DoubleTime();
-                c_brush_polys = 0;
-                c_alias_polys = 0;
-                c_lightmaps_uploaded = 0;
-            }
-
-            mirror = false;
-
-            R_Clear();
-
-            // render normal view
-            R_RenderScene();
-            R_DrawViewModel();
-            R_DrawWaterSurfaces();
+    if (gl_zfix.value) {
+        if (gldepthmax > gldepthmin)
+            glPolygonOffset(1, 1);
+        else
+            glPolygonOffset(-1, -1);
+    }
+}
 
 #ifdef NQ_HACK /* Mirrors disabled for now in QW */
-            // render mirror view
-            R_Mirror();
+/*
+=============
+R_Mirror
+=============
+*/
+static void R_Mirror(void) {
+    float d;
+    msurface_t *s;
+    entity_t *ent;
+
+    if (!mirror)
+        return;
+
+    memcpy(r_base_world_matrix, r_world_matrix, sizeof(r_base_world_matrix));
+
+    d = DotProduct(r_refdef.vieworg, mirror_plane->normal) - mirror_plane->dist;
+    VectorMA(r_refdef.vieworg, -2 * d, mirror_plane->normal, r_refdef.vieworg);
+
+    d = DotProduct(vpn, mirror_plane->normal);
+    VectorMA(vpn, -2 * d, mirror_plane->normal, vpn);
+
+    r_refdef.viewangles[0] = -asin(vpn[2]) / M_PI * 180;
+    r_refdef.viewangles[1] = atan2(vpn[1], vpn[0]) / M_PI * 180;
+    r_refdef.viewangles[2] = -r_refdef.viewangles[2];
+
+    /* Add the player to visedicts they can see their reflection */
+    ent = &cl_entities[cl.viewentity];
+    if (cl_numvisedicts < MAX_VISEDICTS) {
+        cl_visedicts[cl_numvisedicts] = *ent;
+        cl_numvisedicts++;
+    }
+
+    gldepthmin = 0.5;
+    gldepthmax = 1;
+    glDepthRange(gldepthmin, gldepthmax);
+    glDepthFunc(GL_LEQUAL);
+
+    R_RenderScene();
+    R_DrawWaterSurfaces();
+
+    gldepthmin = 0;
+    gldepthmax = 0.5;
+    glDepthRange(gldepthmin, gldepthmax);
+    glDepthFunc(GL_LEQUAL);
+
+    // blend on top
+    qglEnable(GL_BLEND);
+    glMatrixMode(GL_PROJECTION);
+    if (mirror_plane->normal[2])
+        glScalef(1, -1, 1);
+    else
+        glScalef(-1, 1, 1);
+    glCullFace(GL_FRONT);
+    glMatrixMode(GL_MODELVIEW);
+
+    glLoadMatrixf(r_base_world_matrix);
+
+    glColor4f(1, 1, 1, r_mirroralpha.value);
+    s = cl.worldmodel->textures[mirrortexturenum]->texturechain;
+    for (; s; s = s->texturechain)
+        R_RenderBrushPoly(&r_worldentity, s);
+    cl.worldmodel->textures[mirrortexturenum]->texturechain = NULL;
+    qglDisable(GL_BLEND);
+    glColor4f(1, 1, 1, 1);
+}
 #endif
 
-            R_PolyBlend();
+/*
+================
+R_RenderView
 
-            if (r_speeds.value) {
-                //              glFinish ();
-                time2 = Sys_DoubleTime();
-                Con_Printf("%3i ms  %4i wpoly %4i epoly %4i dlit\n", (int)((time2 - time1) * 1000), c_brush_polys,
-                           c_alias_polys, c_lightmaps_uploaded);
-            }
-        }
+r_refdef must be set before the first call
+================
+*/
+void R_RenderView(void) {
+    double time1 = 0, time2;
+
+    if (r_norefresh.value)
+        return;
+
+    if (!r_worldentity.model || !cl.worldmodel)
+        Sys_Error("%s: NULL worldmodel", __func__);
+
+    if (gl_finish.value || r_speeds.value)
+        glFinish();
+
+    if (r_speeds.value) {
+        time1 = Sys_DoubleTime();
+        c_brush_polys = 0;
+        c_alias_polys = 0;
+        c_lightmaps_uploaded = 0;
+    }
+
+    mirror = false;
+
+    R_Clear();
+
+    // render normal view
+    R_RenderScene();
+    R_DrawViewModel();
+    R_DrawWaterSurfaces();
+
+#ifdef NQ_HACK /* Mirrors disabled for now in QW */
+    // render mirror view
+    R_Mirror();
+#endif
+
+    R_PolyBlend();
+
+    if (r_speeds.value) {
+        //              glFinish ();
+        time2 = Sys_DoubleTime();
+        Con_Printf("%3i ms  %4i wpoly %4i epoly %4i dlit\n", (int)((time2 - time1) * 1000), c_brush_polys,
+                   c_alias_polys, c_lightmaps_uploaded);
+    }
+}
