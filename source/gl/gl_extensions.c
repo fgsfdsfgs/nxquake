@@ -27,41 +27,37 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "qtypes.h"
 
 qboolean gl_npotable;
-cvar_t gl_npot = { "gl_npot", "1", false };
+cvar_t gl_npot = {"gl_npot", "1", false};
 
-static qboolean
-GL_ExtensionCheck(const char *extension)
-{
+static qboolean GL_ExtensionCheck(const char *extension) {
     int length = strlen(extension);
     char *check;
     char buf[1024];
 
     if (!strncmp(gl_extensions, extension, length)) {
-	char end = gl_extensions[length];
-	if (!end || end == ' ')
-	    return true;
+        char end = gl_extensions[length];
+        if (!end || end == ' ')
+            return true;
     }
 
     snprintf(buf, sizeof(buf), " %s", extension);
     length++;
     while (1) {
-	check = strstr(gl_extensions, buf);
-	if (!check)
-	    return false;
-	if (!check[length] || check[length] == ' ')
-	    return true;
-	check += length;
+        check = strstr(gl_extensions, buf);
+        if (!check)
+            return false;
+        if (!check[length] || check[length] == ' ')
+            return true;
+        check += length;
     }
 }
 
-void
-GL_ExtensionCheck_NPoT(void)
-{
+void GL_ExtensionCheck_NPoT(void) {
     gl_npotable = false;
     if (COM_CheckParm("-nonpot"))
-	return;
+        return;
     if (!GL_ExtensionCheck("GL_ARB_texture_non_power_of_two"))
-	return;
+        return;
 
     Con_DPrintf("Non-power-of-two textures available.\n");
     gl_npotable = true;

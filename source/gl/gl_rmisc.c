@@ -36,16 +36,12 @@ GLuint particletexture;
 R_InitTextures
 ==================
 */
-void
-R_InitTextures(void)
-{
+void R_InitTextures(void) {
     int x, y, m;
     byte *dest;
 
-// create a simple checkerboard texture for the default
-    r_notexture_mip =
-	Hunk_AllocName(sizeof(texture_t) + 16 * 16 + 8 * 8 + 4 * 4 + 2 * 2,
-		       "notexture");
+    // create a simple checkerboard texture for the default
+    r_notexture_mip = Hunk_AllocName(sizeof(texture_t) + 16 * 16 + 8 * 8 + 4 * 4 + 2 * 2, "notexture");
 
     r_notexture_mip->width = r_notexture_mip->height = 16;
     r_notexture_mip->offsets[0] = sizeof(texture_t);
@@ -54,32 +50,24 @@ R_InitTextures(void)
     r_notexture_mip->offsets[3] = r_notexture_mip->offsets[2] + 4 * 4;
 
     for (m = 0; m < 4; m++) {
-	dest = (byte *)r_notexture_mip + r_notexture_mip->offsets[m];
-	for (y = 0; y < (16 >> m); y++) {
-	    for (x = 0; x < (16 >> m); x++) {
-		if ((y < (8 >> m)) ^ (x < (8 >> m)))
-		    *dest++ = 0;
-		else
-		    *dest++ = 0xff;
-	    }
-	}
+        dest = (byte *)r_notexture_mip + r_notexture_mip->offsets[m];
+        for (y = 0; y < (16 >> m); y++) {
+            for (x = 0; x < (16 >> m); x++) {
+                if ((y < (8 >> m)) ^ (x < (8 >> m)))
+                    *dest++ = 0;
+                else
+                    *dest++ = 0xff;
+            }
+        }
     }
 }
 
 static const byte dottexture[8][8] = {
-    {0, 1, 1, 0, 0, 0, 0, 0},
-    {1, 1, 1, 1, 0, 0, 0, 0},
-    {1, 1, 1, 1, 0, 0, 0, 0},
-    {0, 1, 1, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
-    {0, 0, 0, 0, 0, 0, 0, 0},
+    {0, 1, 1, 0, 0, 0, 0, 0}, {1, 1, 1, 1, 0, 0, 0, 0}, {1, 1, 1, 1, 0, 0, 0, 0}, {0, 1, 1, 0, 0, 0, 0, 0},
+    {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 0, 0, 0, 0},
 };
 
-static void
-R_InitParticleTexture(void)
-{
+static void R_InitParticleTexture(void) {
     int x, y;
     byte data[8][8][4];
 
@@ -90,15 +78,14 @@ R_InitParticleTexture(void)
     GL_Bind(particletexture);
 
     for (x = 0; x < 8; x++) {
-	for (y = 0; y < 8; y++) {
-	    data[y][x][0] = 255;
-	    data[y][x][1] = 255;
-	    data[y][x][2] = 255;
-	    data[y][x][3] = dottexture[x][y] * 255;
-	}
+        for (y = 0; y < 8; y++) {
+            data[y][x][0] = 255;
+            data[y][x][1] = 255;
+            data[y][x][2] = 255;
+            data[y][x][3] = dottexture[x][y] * 255;
+        }
     }
-    qglTexImage2D(GL_TEXTURE_2D, 0, gl_alpha_format, 8, 8, 0, GL_RGBA,
-		 GL_UNSIGNED_BYTE, data);
+    qglTexImage2D(GL_TEXTURE_2D, 0, gl_alpha_format, 8, 8, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
@@ -113,25 +100,19 @@ R_Envmap_f
 Grab six views for environment mapping tests
 ===============
 */
-static void
-R_Envmap_f(void)
-{
-
-}
+static void R_Envmap_f(void) {}
 
 // FIXME - locate somewhere else?
-cvar_t r_lockpvs = { "r_lockpvs", "0" };
-cvar_t r_lockfrustum = { "r_lockfrustum", "0" };
-cvar_t r_drawflat = { "r_drawflat", "0" };
+cvar_t r_lockpvs = {"r_lockpvs", "0"};
+cvar_t r_lockfrustum = {"r_lockfrustum", "0"};
+cvar_t r_drawflat = {"r_drawflat", "0"};
 
 /*
 ===============
 R_Init
 ===============
 */
-void
-R_Init(void)
-{
+void R_Init(void) {
     Cmd_AddCommand("envmap", R_Envmap_f);
     Cmd_AddCommand("pointfile", R_ReadPointFile_f);
     Cmd_AddCommand("timerefresh", R_TimeRefresh_f);
@@ -194,15 +175,12 @@ R_Init(void)
     glGenTextures(MAX_CLIENTS, playertextures);
 }
 
-
 /*
 ===============
 R_SetVrect
 ===============
 */
-void
-R_SetVrect(const vrect_t *pvrectin, vrect_t *pvrect, int lineadj)
-{
+void R_SetVrect(const vrect_t *pvrectin, vrect_t *pvrect, int lineadj) {
     int h;
     float size;
     qboolean full;
@@ -217,37 +195,37 @@ R_SetVrect(const vrect_t *pvrectin, vrect_t *pvrect, int lineadj)
 
     /* Hide the status bar during intermission */
     if (cl.intermission) {
-	full = true;
-	size = 100.0;
-	lineadj = 0;
+        full = true;
+        size = 100.0;
+        lineadj = 0;
     }
     size /= 100.0;
 
     if (full)
-	h = pvrectin->height;
+        h = pvrectin->height;
     else
-	h = pvrectin->height - lineadj;
+        h = pvrectin->height - lineadj;
 
     pvrect->width = pvrectin->width * size;
     if (pvrect->width < 96) {
-	size = 96.0 / pvrectin->width;
-	pvrect->width = 96;	// min for icons
+        size = 96.0 / pvrectin->width;
+        pvrect->width = 96; // min for icons
     }
-    //pvrect->width &= ~7;
+    // pvrect->width &= ~7;
 
     pvrect->height = pvrectin->height * size;
     if (!full) {
-	if (pvrect->height > pvrectin->height - lineadj)
-	    pvrect->height = pvrectin->height - lineadj;
+        if (pvrect->height > pvrectin->height - lineadj)
+            pvrect->height = pvrectin->height - lineadj;
     } else if (pvrect->height > pvrectin->height)
-	pvrect->height = pvrectin->height;
-    //pvrect->height &= ~1;
+        pvrect->height = pvrectin->height;
+    // pvrect->height &= ~1;
 
     pvrect->x = (pvrectin->width - pvrect->width) / 2;
     if (full)
-	pvrect->y = 0;
+        pvrect->y = 0;
     else
-	pvrect->y = (h - pvrect->height) / 2;
+        pvrect->y = (h - pvrect->height) / 2;
 }
 
 /*
@@ -259,31 +237,26 @@ R_SetVrect(const vrect_t *pvrectin, vrect_t *pvrect, int lineadj)
  * The input texture may be a sub-rectangle (assumed to be left aligned) so
  * input stride is specified separately from input width.
  */
-static void
-ResampleXlate(const byte *in,
-	      unsigned inwidth, unsigned inheight, unsigned instride,
-	      unsigned *out,
-	      unsigned outwidth, unsigned outheight,
-	      const unsigned *xlate)
-{
+static void ResampleXlate(const byte *in, unsigned inwidth, unsigned inheight, unsigned instride, unsigned *out,
+                          unsigned outwidth, unsigned outheight, const unsigned *xlate) {
     int i, j;
     const byte *inrow;
     unsigned frac, fracstep;
 
     fracstep = inwidth * 0x10000 / outwidth;
     for (i = 0; i < outheight; i++, out += outwidth) {
-	inrow = in + instride * (i * inheight / outheight);
-	frac = fracstep >> 1;
-	for (j = 0; j < outwidth; j += 4) {
-	    out[j] = xlate[inrow[frac >> 16]];
-	    frac += fracstep;
-	    out[j + 1] = xlate[inrow[frac >> 16]];
-	    frac += fracstep;
-	    out[j + 2] = xlate[inrow[frac >> 16]];
-	    frac += fracstep;
-	    out[j + 3] = xlate[inrow[frac >> 16]];
-	    frac += fracstep;
-	}
+        inrow = in + instride * (i * inheight / outheight);
+        frac = fracstep >> 1;
+        for (j = 0; j < outwidth; j += 4) {
+            out[j] = xlate[inrow[frac >> 16]];
+            frac += fracstep;
+            out[j + 1] = xlate[inrow[frac >> 16]];
+            frac += fracstep;
+            out[j + 2] = xlate[inrow[frac >> 16]];
+            frac += fracstep;
+            out[j + 3] = xlate[inrow[frac >> 16]];
+            frac += fracstep;
+        }
     }
 }
 
@@ -294,9 +267,7 @@ R_TranslatePlayerSkin
 Translates a skin texture by the per-player color lookup
 ===============
 */
-void
-R_TranslatePlayerSkin(int playernum)
-{
+void R_TranslatePlayerSkin(int playernum) {
     int top, bottom;
     unsigned translate[256];
     int i;
@@ -319,16 +290,15 @@ R_TranslatePlayerSkin(int playernum)
     player = &cl.players[playernum];
 #ifdef QW_HACK
     if (!player->name[0])
-	return;
+        return;
 
     skin_key = Info_ValueForKey(player->userinfo, "skin");
     COM_StripExtension(skin_key, skin, sizeof(skin));
     if (player->skin && !strcasecmp(skin, player->skin->name))
-	player->skin = NULL;
+        player->skin = NULL;
 
-    if (player->_topcolor == player->topcolor &&
-	player->_bottomcolor == player->bottomcolor && player->skin)
-	return;
+    if (player->_topcolor == player->topcolor && player->_bottomcolor == player->bottomcolor && player->skin)
+        return;
 
     player->_topcolor = player->topcolor;
     player->_bottomcolor = player->bottomcolor;
@@ -337,19 +307,19 @@ R_TranslatePlayerSkin(int playernum)
     bottom = qclamp((int)player->bottomcolor, 0, 13) * 16;
 
     for (i = 0; i < 256; i++)
-	translate[i] = d_8to24table[i];
+        translate[i] = d_8to24table[i];
 
     for (i = 0; i < 16; i++) {
-	/* the artists made some backwards ranges */
-	if (top < 128)
-	    translate[TOP_RANGE + i] = d_8to24table[top + i];
-	else
-	    translate[TOP_RANGE + i] = d_8to24table[top + 15 - i];
+        /* the artists made some backwards ranges */
+        if (top < 128)
+            translate[TOP_RANGE + i] = d_8to24table[top + i];
+        else
+            translate[TOP_RANGE + i] = d_8to24table[top + 15 - i];
 
-	if (bottom < 128)
-	    translate[BOTTOM_RANGE + i] = d_8to24table[bottom + i];
-	else
-	    translate[BOTTOM_RANGE + i] = d_8to24table[bottom + 15 - i];
+        if (bottom < 128)
+            translate[BOTTOM_RANGE + i] = d_8to24table[bottom + i];
+        else
+            translate[BOTTOM_RANGE + i] = d_8to24table[bottom + 15 - i];
     }
 
     /*
@@ -361,20 +331,19 @@ R_TranslatePlayerSkin(int playernum)
     const aliashdr_t *aliashdr;
 
     if (!model)
-	return;			// player doesn't have a model yet
+        return; // player doesn't have a model yet
     if (model->type != mod_alias)
-	return;			// only translate skins on alias models
+        return; // only translate skins on alias models
 
     aliashdr = Mod_Extradata(model);
     original = (const byte *)aliashdr + aliashdr->skindata;
     if (entity->skinnum < 0 || entity->skinnum >= aliashdr->numskins) {
-	Con_DPrintf("Player %d has invalid skin #%d\n",
-		    playernum, entity->skinnum);
+        Con_DPrintf("Player %d has invalid skin #%d\n", playernum, entity->skinnum);
     } else {
-	const int skinsize = aliashdr->skinwidth * aliashdr->skinheight;
-	if (skinsize & 3)
-	    Sys_Error("%s: skinsize & 3", __func__);
-	original += entity->skinnum * skinsize;
+        const int skinsize = aliashdr->skinwidth * aliashdr->skinheight;
+        if (skinsize & 3)
+            Sys_Error("%s: skinsize & 3", __func__);
+        original += entity->skinnum * skinsize;
     }
 
     inwidth = instride = aliashdr->skinwidth;
@@ -386,15 +355,15 @@ R_TranslatePlayerSkin(int playernum)
     inheight = 194;
 
     if (!player->skin)
-	Skin_Find(player);
+        Skin_Find(player);
     if ((original = Skin_Cache(player->skin)) != NULL) {
-	/* Skin data width for custom skins */
-	instride = 320;
+        /* Skin data width for custom skins */
+        instride = 320;
     } else {
-	model_t *model = cl.model_precache[cl_playerindex];
-	const aliashdr_t *aliashdr = Mod_Extradata(model);
-	original = (const byte *)aliashdr + aliashdr->skindata;
-	instride = inwidth;
+        model_t *model = cl.model_precache[cl_playerindex];
+        const aliashdr_t *aliashdr = Mod_Extradata(model);
+        original = (const byte *)aliashdr + aliashdr->skindata;
+        instride = inwidth;
     }
 #endif
 
@@ -410,38 +379,33 @@ R_TranslatePlayerSkin(int playernum)
     scaled_width = qmin((unsigned)gl_max_size.value, scaled_width);
     scaled_height = qmin((unsigned)gl_max_size.value, scaled_height);
 
-    ResampleXlate(original, inwidth, inheight, instride,
-		  pixels, scaled_width, scaled_height, translate);
-    qglTexImage2D(GL_TEXTURE_2D, 0, gl_solid_format, scaled_width,
-		 scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+    ResampleXlate(original, inwidth, inheight, instride, pixels, scaled_width, scaled_height, translate);
+    qglTexImage2D(GL_TEXTURE_2D, 0, gl_solid_format, scaled_width, scaled_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
 
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 }
 
-
 /*
 ===============
 R_NewMap
 ===============
 */
-void
-R_NewMap(void)
-{
+void R_NewMap(void) {
     void *hunkbase;
     int i;
 
     for (i = 0; i < 256; i++)
-	d_lightstylevalue[i] = 264;	// normal light value
+        d_lightstylevalue[i] = 264; // normal light value
 
     memset(&r_worldentity, 0, sizeof(r_worldentity));
     r_worldentity.model = &cl.worldmodel->model;
 
-// clear out efrags in case the level hasn't been reloaded
-// FIXME: is this one short?
+    // clear out efrags in case the level hasn't been reloaded
+    // FIXME: is this one short?
     for (i = 0; i < cl.worldmodel->numleafs; i++)
-	cl.worldmodel->leafs[i].efrags = NULL;
+        cl.worldmodel->leafs[i].efrags = NULL;
 
     r_viewleaf = NULL;
     R_ClearParticles();
@@ -452,14 +416,13 @@ R_NewMap(void)
     /* identify mirror texture */
     mirrortexturenum = -1;
     for (i = 0; i < cl.worldmodel->numtextures; i++) {
-	if (!cl.worldmodel->textures[i])
-	    continue;
-	if (!strncmp(cl.worldmodel->textures[i]->name, "window02_1", 10))
-	    mirrortexturenum = i;
-	cl.worldmodel->textures[i]->texturechain = NULL;
+        if (!cl.worldmodel->textures[i])
+            continue;
+        if (!strncmp(cl.worldmodel->textures[i]->name, "window02_1", 10))
+            mirrortexturenum = i;
+        cl.worldmodel->textures[i]->texturechain = NULL;
     }
 }
-
 
 /*
 ====================
@@ -468,12 +431,6 @@ R_TimeRefresh_f
 For program optimization
 ====================
 */
-void
-R_TimeRefresh_f(void)
-{
-}
+void R_TimeRefresh_f(void) {}
 
-void
-D_FlushCaches(void)
-{
-}
+void D_FlushCaches(void) {}

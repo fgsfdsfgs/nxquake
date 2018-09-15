@@ -40,11 +40,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 int vid_modenum = VID_MODE_NONE;
 
-static cvar_t vid_mode = {
-    .name = "vid_mode",
-    .string = stringify(VID_MODE_WINDOWED),
-    .archive = false
-};
+static cvar_t vid_mode = {.name = "vid_mode", .string = stringify(VID_MODE_WINDOWED), .archive = false};
 
 unsigned short d_8to16table[256];
 unsigned d_8to24table[256];
@@ -52,11 +48,7 @@ unsigned char d_15to8table[65536];
 
 viddef_t vid;
 
-qboolean
-VID_IsFullScreen(void)
-{
-    return vid_modenum != 0;
-}
+qboolean VID_IsFullScreen(void) { return vid_modenum != 0; }
 
 qboolean VID_CheckAdequateMem(int width, int height) { return true; }
 void VID_LockBuffer(void) {}
@@ -66,7 +58,7 @@ void (*VID_SetGammaRamp)(unsigned short ramp[3][256]) = NULL;
 
 float gldepthmin, gldepthmax;
 qboolean gl_mtexable;
-cvar_t gl_ztrick = { "gl_ztrick", "1" };
+cvar_t gl_ztrick = {"gl_ztrick", "1"};
 
 void VID_Update(vrect_t *rects) {}
 void D_BeginDirectRect(int x, int y, const byte *pbitmap, int width, int height) {}
@@ -78,16 +70,9 @@ void D_EndDirectRect(int x, int y, int width, int height) {}
  * Move stuff around or create abstractions so these hacks aren't needed
  */
 
-void Sys_SendKeyEvents(void)
-{
-    IN_ProcessEvents();
-}
+void Sys_SendKeyEvents(void) { IN_ProcessEvents(); }
 
-static void
-VID_InitModeList(void)
-{
-
-}
+static void VID_InitModeList(void) {}
 
 static EGLDisplay s_display;
 static EGLSurface s_surface;
@@ -100,11 +85,9 @@ const char *gl_extensions = NULL;
 
 static int gl_num_texture_units;
 
-static void
-setMesaConfig()
-{
-    // Uncomment below to disable error checking and save CPU time (useful for production):
-    // setenv("MESA_NO_ERROR", "1", 1);
+static void setMesaConfig() {
+    // Uncomment below to disable error checking and save CPU time (useful for
+    // production): setenv("MESA_NO_ERROR", "1", 1);
 
 #ifdef GPUDEBUG
     setenv("EGL_LOG_LEVEL", "debug", 1);
@@ -117,14 +100,11 @@ setMesaConfig()
 #endif
 }
 
-static qboolean
-InitEGL(void)
-{
+static qboolean InitEGL(void) {
     // Connect to the EGL default display
     s_display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    if (!s_display)
-    {
-        Sys_Error( "Could not connect to display! error: %d", eglGetError());
+    if (!s_display) {
+        Sys_Error("Could not connect to display! error: %d", eglGetError());
         goto _fail0;
     }
 
@@ -134,39 +114,26 @@ InitEGL(void)
     // Get an appropriate EGL framebuffer configuration
     EGLConfig config;
     EGLint numConfigs;
-    static const EGLint attributeList[] =
-    {
-        EGL_RED_SIZE, 8,
-        EGL_GREEN_SIZE, 8,
-        EGL_BLUE_SIZE, 8,
-        EGL_DEPTH_SIZE, 24,
-        EGL_NONE
-    };
+    static const EGLint attributeList[] = {EGL_RED_SIZE,   8,  EGL_GREEN_SIZE, 8, EGL_BLUE_SIZE, 8,
+                                           EGL_DEPTH_SIZE, 24, EGL_NONE};
     eglChooseConfig(s_display, attributeList, &config, 1, &numConfigs);
-    if (numConfigs == 0)
-    {
-        Sys_Error( "EGL: No config found! error: %d", eglGetError());
+    if (numConfigs == 0) {
+        Sys_Error("EGL: No config found! error: %d", eglGetError());
         goto _fail1;
     }
 
     // Create an EGL window surface
-    s_surface = eglCreateWindowSurface(s_display, config, (char*)"", NULL);
-    if (!s_surface)
-    {
-        Sys_Error( "EGL: Surface creation failed! error: %d", eglGetError());
+    s_surface = eglCreateWindowSurface(s_display, config, (char *)"", NULL);
+    if (!s_surface) {
+        Sys_Error("EGL: Surface creation failed! error: %d", eglGetError());
         goto _fail1;
     }
 
-    static const EGLint ctxAttributeList[] =
-    {
-        EGL_CONTEXT_CLIENT_VERSION, 2,
-        EGL_NONE
-    };
+    static const EGLint ctxAttributeList[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
     // Create an EGL rendering context
     s_context = eglCreateContext(s_display, config, EGL_NO_CONTEXT, ctxAttributeList);
-    if (!s_context)
-    {
-        Sys_Error( "EGL: Context creation failed! error: %d", eglGetError());
+    if (!s_context) {
+        Sys_Error("EGL: Context creation failed! error: %d", eglGetError());
         goto _fail2;
     }
 
@@ -184,18 +151,13 @@ _fail0:
     return false;
 }
 
-static void
-DeinitEGL(void)
-{
-    if (s_display)
-    {
-        if (s_context)
-        {
+static void DeinitEGL(void) {
+    if (s_display) {
+        if (s_context) {
             eglDestroyContext(s_display, s_context);
             s_context = NULL;
         }
-        if (s_surface)
-        {
+        if (s_surface) {
             eglDestroySurface(s_display, s_surface);
             s_surface = NULL;
         }
@@ -204,27 +166,23 @@ DeinitEGL(void)
     }
 }
 
-static qboolean
-VID_GL_CheckExtn(const char *extn)
-{
+static qboolean VID_GL_CheckExtn(const char *extn) {
     const char *found;
     const int len = strlen(extn);
     char nextc;
 
     found = strstr(gl_extensions, extn);
     while (found) {
-      nextc = found[len];
-      if (nextc == ' ' || !nextc)
-          return true;
-      found = strstr(found + len, extn);
+        nextc = found[len];
+        if (nextc == ' ' || !nextc)
+            return true;
+        found = strstr(found + len, extn);
     }
 
     return false;
 }
 
-static void
-VID_InitGL(void)
-{
+static void VID_InitGL(void) {
     Cvar_RegisterVariable(&vid_mode);
     Cvar_RegisterVariable(&gl_npot);
     Cvar_RegisterVariable(&gl_ztrick);
@@ -264,9 +222,7 @@ VID_InitGL(void)
     glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 }
 
-qboolean
-VID_SetMode(const qvidmode_t *mode, const byte *palette)
-{
+qboolean VID_SetMode(const qvidmode_t *mode, const byte *palette) {
     vid.numpages = 1;
     vid.width = vid.conwidth = mode->width;
     vid.height = vid.conheight = mode->height;
@@ -290,9 +246,7 @@ VID_SetMode(const qvidmode_t *mode, const byte *palette)
     return true;
 }
 
-void
-VID_Init(const byte *palette)
-{
+void VID_Init(const byte *palette) {
     int err;
     qvidmode_t *mode;
     const qvidmode_t *setmode;
@@ -324,54 +278,43 @@ VID_Init(const byte *palette)
     vid_menukeyfn = VID_MenuKey;
 }
 
-void
-VID_Shutdown(void)
-{
+void VID_Shutdown(void) {
     QGL_Deinit();
     DeinitEGL();
 }
 
-void
-GL_BeginRendering(int *x, int *y, int *width, int *height)
-{
+void GL_BeginRendering(int *x, int *y, int *width, int *height) {
     *x = *y = 0;
     *width = vid.width;
     *height = vid.height;
 }
 
-void
-GL_EndRendering(void)
-{
+void GL_EndRendering(void) {
     glFlush();
     eglSwapBuffers(s_display, s_surface);
 }
 
-void
-VID_SetPalette(const byte *palette)
-{
+void VID_SetPalette(const byte *palette) {
     unsigned i, r, g, b, pixel;
 
     switch (gl_solid_format) {
     case GL_RGB:
     case GL_RGBA:
-    for (i = 0; i < 256; i++) {
-        r = palette[0];
-        g = palette[1];
-        b = palette[2];
-        palette += 3;
-        pixel = (0xff << 24) | (r << 0) | (g << 8) | (b << 16);
-        d_8to24table[i] = LittleLong(pixel);
-    }
-    break;
+        for (i = 0; i < 256; i++) {
+            r = palette[0];
+            g = palette[1];
+            b = palette[2];
+            palette += 3;
+            pixel = (0xff << 24) | (r << 0) | (g << 8) | (b << 16);
+            d_8to24table[i] = LittleLong(pixel);
+        }
+        break;
     default:
-        Sys_Error("%s: unsupported texture format (%d)", __func__,
-          gl_solid_format);
+        Sys_Error("%s: unsupported texture format (%d)", __func__, gl_solid_format);
     }
 }
 
-void
-VID_ShiftPalette(const byte *palette)
-{
+void VID_ShiftPalette(const byte *palette) {
     /* Done via gl_polyblend instead */
-    //VID_SetPalette(palette);
+    // VID_SetPalette(palette);
 }

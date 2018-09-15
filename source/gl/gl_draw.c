@@ -39,9 +39,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "vid.h"
 #endif
 
-static cvar_t gl_constretch = { "gl_constretch", "0", true };
+static cvar_t gl_constretch = {"gl_constretch", "0", true};
 
-const byte *draw_chars;		/* 8*8 graphic characters */
+const byte *draw_chars; /* 8*8 graphic characters */
 const qpic8_t *draw_disc;
 static const qpic8_t *draw_backtile;
 
@@ -49,16 +49,11 @@ GLuint charset_texture;
 static GLuint translate_texture;
 static GLuint crosshair_texture;
 
-static const byte crosshair_data[64] = {
-    0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff,
-    0xfe, 0xff, 0xfe, 0xff, 0xfe, 0xff, 0xfe, 0xff,
-    0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff,
-    0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
-};
+static const byte crosshair_data[64] = {0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+                                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff,
+                                        0xfe, 0xff, 0xfe, 0xff, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xff, 0xff, 0xff,
+                                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe,
+                                        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 
 typedef struct {
     int texnum;
@@ -79,10 +74,10 @@ static glpic_t *conback;
 =============================================================================
 */
 
-#define MAX_SCRAPS   2
-#define BLOCK_WIDTH  256
+#define MAX_SCRAPS 2
+#define BLOCK_WIDTH 256
 #define BLOCK_HEIGHT 256
-#define BLOCK_BYTES  (BLOCK_WIDTH * BLOCK_HEIGHT * 4)
+#define BLOCK_BYTES (BLOCK_WIDTH * BLOCK_HEIGHT * 4)
 
 typedef struct {
     GLuint glnum;
@@ -94,19 +89,17 @@ typedef struct {
 
 static scrap_t gl_scraps[MAX_SCRAPS];
 
-static void
-Scrap_Init(void)
-{
+static void Scrap_Init(void) {
     int i;
     scrap_t *scrap;
 
     memset(gl_scraps, 0, sizeof(gl_scraps));
     scrap = gl_scraps;
     for (i = 0; i < MAX_SCRAPS; i++, scrap++) {
-	scrap->pic.width = scrap->pic.stride = BLOCK_WIDTH;
-	scrap->pic.height = BLOCK_HEIGHT;
-	scrap->pic.pixels = scrap->texels;
-	glGenTextures(1, &scrap->glnum);
+        scrap->pic.width = scrap->pic.stride = BLOCK_WIDTH;
+        scrap->pic.height = BLOCK_HEIGHT;
+        scrap->pic.pixels = scrap->texels;
+        glGenTextures(1, &scrap->glnum);
     }
 }
 
@@ -114,9 +107,7 @@ Scrap_Init(void)
  * Scrap_AllocBlock
  *   Returns a scrap and the position inside it
  */
-static scrap_t *
-Scrap_AllocBlock(int w, int h, int *x, int *y)
-{
+static scrap_t *Scrap_AllocBlock(int w, int h, int *x, int *y) {
     int i, j;
     int best, best2;
     int scrapnum;
@@ -131,56 +122,53 @@ Scrap_AllocBlock(int w, int h, int *x, int *y)
 
     scrap = gl_scraps;
     for (scrapnum = 0; scrapnum < MAX_SCRAPS; scrapnum++, scrap++) {
-	best = BLOCK_HEIGHT;
+        best = BLOCK_HEIGHT;
 
-	for (i = 0; i < BLOCK_WIDTH - w; i++) {
-	    best2 = 0;
+        for (i = 0; i < BLOCK_WIDTH - w; i++) {
+            best2 = 0;
 
-	    for (j = 0; j < w; j++) {
-		if (scrap->allocated[i + j] >= best)
-		    break;
-		if (scrap->allocated[i + j] > best2)
-		    best2 = scrap->allocated[i + j];
-	    }
-	    if (j == w) {
-		/* this is a valid spot */
-		*x = i;
-		*y = best = best2;
-	    }
-	}
+            for (j = 0; j < w; j++) {
+                if (scrap->allocated[i + j] >= best)
+                    break;
+                if (scrap->allocated[i + j] > best2)
+                    best2 = scrap->allocated[i + j];
+            }
+            if (j == w) {
+                /* this is a valid spot */
+                *x = i;
+                *y = best = best2;
+            }
+        }
 
-	if (best + h > BLOCK_HEIGHT)
-	    continue;
+        if (best + h > BLOCK_HEIGHT)
+            continue;
 
-	for (i = 0; i < w; i++)
-	    scrap->allocated[*x + i] = best + h;
+        for (i = 0; i < w; i++)
+            scrap->allocated[*x + i] = best + h;
 
-	if (*x == 0x818181 || *y == 0x818181)
-	    Sys_Error("%s: block allocation problem", __func__);
+        if (*x == 0x818181 || *y == 0x818181)
+            Sys_Error("%s: block allocation problem", __func__);
 
-	scrap->dirty = true;
+        scrap->dirty = true;
 
-	return scrap;
+        return scrap;
     }
 
     Sys_Error("%s: full", __func__);
 }
 
-
-static void
-Scrap_Flush(GLuint texnum)
-{
+static void Scrap_Flush(GLuint texnum) {
     int i;
     scrap_t *scrap;
 
     scrap = gl_scraps;
     for (i = 0; i < MAX_SCRAPS; i++, scrap++) {
-	if (scrap->dirty && texnum == scrap->glnum) {
-	    GL_Bind(scrap->glnum);
-	    GL_Upload8_Alpha(&scrap->pic, false, 255);
-	    scrap->dirty = false;
-	    return;
-	}
+        if (scrap->dirty && texnum == scrap->glnum) {
+            GL_Bind(scrap->glnum);
+            GL_Upload8_Alpha(&scrap->pic, false, 255);
+            scrap->dirty = false;
+            return;
+        }
     }
 }
 
@@ -199,15 +187,9 @@ static int menu_numcachepics;
 /* FIXME - don't need to keep these pixels around... */
 static byte menuplyr_pixels[48 * 56];
 
-static int
-GL_LoadPicTexture(const qpic8_t *pic)
-{
-    return GL_LoadTexture_Alpha("", pic, false, 255);
-}
+static int GL_LoadPicTexture(const qpic8_t *pic) { return GL_LoadTexture_Alpha("", pic, false, 255); }
 
-const qpic8_t *
-Draw_PicFromWad(const char *name)
-{
+const qpic8_t *Draw_PicFromWad(const char *name) {
     qpic8_t *pic;
     dpic8_t *dpic;
     glpic_t *glpic;
@@ -224,24 +206,24 @@ Draw_PicFromWad(const char *name)
 
     /* load little ones into the scrap */
     if (pic->width < 64 && pic->height < 64) {
-	int x, y;
-	int i, j, src;
+        int x, y;
+        int i, j, src;
 
-	scrap = Scrap_AllocBlock(pic->width, pic->height, &x, &y);
-	src = 0;
-	for (i = 0; i < pic->height; i++) {
-	    for (j = 0; j < pic->width; j++, src++) {
-		const int dst = (y + i) * BLOCK_WIDTH + x + j;
-		scrap->texels[dst] = pic->pixels[src];
-	    }
-	}
-	glpic->texnum = scrap->glnum;
-	glpic->sl = (x + 0.01) / (float)BLOCK_WIDTH;
-	glpic->sh = (x + pic->width - 0.01) / (float)BLOCK_WIDTH;
-	glpic->tl = (y + 0.01) / (float)BLOCK_WIDTH;
-	glpic->th = (y + pic->height - 0.01) / (float)BLOCK_WIDTH;
+        scrap = Scrap_AllocBlock(pic->width, pic->height, &x, &y);
+        src = 0;
+        for (i = 0; i < pic->height; i++) {
+            for (j = 0; j < pic->width; j++, src++) {
+                const int dst = (y + i) * BLOCK_WIDTH + x + j;
+                scrap->texels[dst] = pic->pixels[src];
+            }
+        }
+        glpic->texnum = scrap->glnum;
+        glpic->sl = (x + 0.01) / (float)BLOCK_WIDTH;
+        glpic->sh = (x + pic->width - 0.01) / (float)BLOCK_WIDTH;
+        glpic->tl = (y + 0.01) / (float)BLOCK_WIDTH;
+        glpic->th = (y + pic->height - 0.01) / (float)BLOCK_WIDTH;
 
-	return pic;
+        return pic;
     }
 
     glpic->texnum = GL_LoadPicTexture(pic);
@@ -253,15 +235,12 @@ Draw_PicFromWad(const char *name)
     return pic;
 }
 
-
 /*
 ================
 Draw_CachePic
 ================
 */
-const qpic8_t *
-Draw_CachePic(const char *path)
-{
+const qpic8_t *Draw_CachePic(const char *path) {
     cachepic_t *cachepic;
     dpic8_t *dpic;
     qpic8_t *pic;
@@ -269,11 +248,11 @@ Draw_CachePic(const char *path)
 
     cachepic = menu_cachepics;
     for (i = 0; i < menu_numcachepics; i++, cachepic++)
-	if (!strcmp(path, cachepic->name))
-	    return &cachepic->glpic.pic;
+        if (!strcmp(path, cachepic->name))
+            return &cachepic->glpic.pic;
 
     if (menu_numcachepics == MAX_CACHED_PICS)
-	Sys_Error("menu_numcachepics == MAX_CACHED_PICS");
+        Sys_Error("menu_numcachepics == MAX_CACHED_PICS");
     menu_numcachepics++;
 
     mark = Hunk_LowMark();
@@ -282,7 +261,7 @@ Draw_CachePic(const char *path)
     snprintf(cachepic->name, sizeof(cachepic->name), "%s", path);
     dpic = COM_LoadHunkFile(path);
     if (!dpic)
-	Sys_Error("%s: failed to load %s", __func__, path);
+        Sys_Error("%s: failed to load %s", __func__, path);
     SwapDPic(dpic);
 
     pic = &cachepic->glpic.pic;
@@ -296,14 +275,13 @@ Draw_CachePic(const char *path)
      * configuration dialog
      */
     if (!strcmp(path, "gfx/menuplyr.lmp")) {
-	int picsize;
+        int picsize;
 
-	if (pic->width != 48 || pic->height != 56)
-	    Con_DPrintf("WARNING: %s: odd sized %s (%dx%d)\n",
-			__func__, path, pic->width, pic->height);
-	picsize = pic->width * pic->height;
-	picsize = qmin(picsize, (int)sizeof(menuplyr_pixels));
-	memcpy(menuplyr_pixels, pic->pixels, picsize);
+        if (pic->width != 48 || pic->height != 56)
+            Con_DPrintf("WARNING: %s: odd sized %s (%dx%d)\n", __func__, path, pic->width, pic->height);
+        picsize = pic->width * pic->height;
+        picsize = qmin(picsize, (int)sizeof(menuplyr_pixels));
+        memcpy(menuplyr_pixels, pic->pixels, picsize);
     }
 
     cachepic->glpic.texnum = GL_LoadPicTexture(pic);
@@ -317,12 +295,10 @@ Draw_CachePic(const char *path)
     return pic;
 }
 
-#define CHAR_WIDTH  8
+#define CHAR_WIDTH 8
 #define CHAR_HEIGHT 8
 
-static void
-Draw_ScaledCharToConback(const qpic8_t *conback, int num, byte *dest)
-{
+static void Draw_ScaledCharToConback(const qpic8_t *conback, int num, byte *dest) {
     const byte *source, *src;
     int row, col;
     int drawlines, drawwidth;
@@ -337,12 +313,12 @@ Draw_ScaledCharToConback(const qpic8_t *conback, int num, byte *dest)
     fstep = 320 * 0x10000 / conback->width;
 
     for (y = 0; y < drawlines; y++, dest += conback->width) {
-	src = source + (y * CHAR_HEIGHT / drawlines) * 128;
-	f = 0;
-	for (x = 0; x < drawwidth; x++, f += fstep) {
-	    if (src[f >> 16] != 255)
-		dest[x] = 0x60 + src[f >> 16];
-	}
+        src = source + (y * CHAR_HEIGHT / drawlines) * 128;
+        f = 0;
+        for (x = 0; x < drawwidth; x++, f += fstep) {
+            if (src[f >> 16] != 255)
+                dest[x] = 0x60 + src[f >> 16];
+        }
     }
 }
 
@@ -355,9 +331,7 @@ Draw_ScaledCharToConback(const qpic8_t *conback, int num, byte *dest)
  * sizes, the positioning is scaled so as to make it appear the same size and
  * at the same location.
  */
-static void
-Draw_ConbackString(const qpic8_t *conback, byte *pixels, const char *str)
-{
+static void Draw_ConbackString(const qpic8_t *conback, byte *pixels, const char *str) {
     int len, row, col, i, x;
     byte *dest;
 
@@ -367,8 +341,8 @@ Draw_ConbackString(const qpic8_t *conback, byte *pixels, const char *str)
 
     dest = pixels + conback->width * row + col;
     for (i = 0; i < len; i++) {
-	x = i * CHAR_WIDTH * conback->width / 320;
-	Draw_ScaledCharToConback(conback, str[i], dest + x);
+        x = i * CHAR_WIDTH * conback->width / 320;
+        Draw_ScaledCharToConback(conback, str[i], dest + x);
     }
 }
 
@@ -377,9 +351,7 @@ Draw_ConbackString(const qpic8_t *conback, byte *pixels, const char *str)
 Draw_Init
 ===============
 */
-void
-Draw_Init(void)
-{
+void Draw_Init(void) {
     dpic8_t *dpic;
     qpic8_t *pic;
     char version[5];
@@ -396,15 +368,15 @@ Draw_Init(void)
     draw_chars = W_GetLumpName(&host_gfx, "conchars");
 
     /* now turn them into textures */
-    const qpic8_t charset_pic = { 128, 128, 128, draw_chars };
+    const qpic8_t charset_pic = {128, 128, 128, draw_chars};
     charset_texture = GL_LoadTexture_Alpha("charset", &charset_pic, false, 0);
-    const qpic8_t crosshair_pic = { 8, 8, 8, crosshair_data };
+    const qpic8_t crosshair_pic = {8, 8, 8, crosshair_data};
     crosshair_texture = GL_LoadTexture_Alpha("crosshair", &crosshair_pic, false, 255);
 
     conback = Hunk_AllocName(sizeof(*conback), "qpic8_t");
     dpic = COM_LoadHunkFile("gfx/conback.lmp");
     if (!dpic)
-	Sys_Error("Couldn't load gfx/conback.lmp");
+        Sys_Error("Couldn't load gfx/conback.lmp");
     SwapDPic(dpic);
 
     pic = &conback->pic;
@@ -456,19 +428,17 @@ It can be clipped to the top of the screen to allow the console to be
 smoothly scrolled off.
 ================
 */
-void
-Draw_Character(int x, int y, int num)
-{
+void Draw_Character(int x, int y, int num) {
     int row, col;
     float frow, fcol, size;
 
     if (num == 32)
-	return;			// space
+        return; // space
 
     num &= 255;
 
     if (y <= -8)
-	return;			// totally off screen
+        return; // totally off screen
 
     row = num >> 4;
     col = num & 15;
@@ -495,13 +465,11 @@ Draw_Character(int x, int y, int num)
 Draw_String
 ================
 */
-void
-Draw_String(int x, int y, const char *str)
-{
+void Draw_String(int x, int y, const char *str) {
     while (*str) {
-	Draw_Character(x, y, *str);
-	str++;
-	x += 8;
+        Draw_Character(x, y, *str);
+        str++;
+        x += 8;
     }
 }
 
@@ -510,59 +478,50 @@ Draw_String(int x, int y, const char *str)
 Draw_Alt_String
 ================
 */
-void
-Draw_Alt_String(int x, int y, const char *str)
-{
+void Draw_Alt_String(int x, int y, const char *str) {
     while (*str) {
-	Draw_Character(x, y, (*str) | 0x80);
-	str++;
-	x += 8;
+        Draw_Character(x, y, (*str) | 0x80);
+        str++;
+        x += 8;
     }
 }
 
-void
-Draw_Crosshair(void)
-{
+void Draw_Crosshair(void) {
     int x, y;
     unsigned char *pColor;
 
     if (crosshair.value == 2) {
-	x = scr_vrect.x + scr_vrect.width / 2 - 3 + cl_crossx.value;
-	y = scr_vrect.y + scr_vrect.height / 2 - 3 + cl_crossy.value;
+        x = scr_vrect.x + scr_vrect.width / 2 - 3 + cl_crossx.value;
+        y = scr_vrect.y + scr_vrect.height / 2 - 3 + cl_crossy.value;
 
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	pColor = (unsigned char *)&d_8to24table[(byte)crosshaircolor.value];
-	glColor4ubv(pColor);
-	GL_Bind(crosshair_texture);
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        pColor = (unsigned char *)&d_8to24table[(byte)crosshaircolor.value];
+        glColor4ubv(pColor);
+        GL_Bind(crosshair_texture);
 
-	glBegin(GL_QUADS);
-	glTexCoord2f(0, 0);
-	glVertex2f(x - 4, y - 4);
-	glTexCoord2f(1, 0);
-	glVertex2f(x + 12, y - 4);
-	glTexCoord2f(1, 1);
-	glVertex2f(x + 12, y + 12);
-	glTexCoord2f(0, 1);
-	glVertex2f(x - 4, y + 12);
-	glEnd();
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0);
+        glVertex2f(x - 4, y - 4);
+        glTexCoord2f(1, 0);
+        glVertex2f(x + 12, y - 4);
+        glTexCoord2f(1, 1);
+        glVertex2f(x + 12, y + 12);
+        glTexCoord2f(0, 1);
+        glVertex2f(x - 4, y + 12);
+        glEnd();
 
-	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     } else if (crosshair.value)
-	Draw_Character(scr_vrect.x + scr_vrect.width / 2 - 4 +
-		       cl_crossx.value,
-		       scr_vrect.y + scr_vrect.height / 2 - 4 +
-		       cl_crossy.value, '+');
+        Draw_Character(scr_vrect.x + scr_vrect.width / 2 - 4 + cl_crossx.value,
+                       scr_vrect.y + scr_vrect.height / 2 - 4 + cl_crossy.value, '+');
 }
-
 
 /*
 =============
 Draw_Pic
 =============
 */
-void
-Draw_Pic(int x, int y, const qpic8_t *pic)
-{
+void Draw_Pic(int x, int y, const qpic8_t *pic) {
     const glpic_t *glpic;
 
     glpic = const_container_of(pic, glpic_t, pic);
@@ -582,10 +541,7 @@ Draw_Pic(int x, int y, const qpic8_t *pic)
     glEnd();
 }
 
-void
-Draw_SubPic(int x, int y, const qpic8_t *pic, int srcx, int srcy, int width,
-	    int height)
-{
+void Draw_SubPic(int x, int y, const qpic8_t *pic, int srcx, int srcy, int width, int height) {
     const glpic_t *glpic;
     float newsl, newtl, newsh, newth;
     float oldglwidth, oldglheight;
@@ -621,17 +577,13 @@ Draw_SubPic(int x, int y, const qpic8_t *pic, int srcx, int srcy, int width,
 Draw_TransPic
 =============
 */
-void
-Draw_TransPic(int x, int y, const qpic8_t *pic)
-{
-    if (x < 0 || (unsigned)(x + pic->width) > vid.width ||
-	y < 0 || (unsigned)(y + pic->height) > vid.height) {
-	Sys_Error("%s: bad coordinates", __func__);
+void Draw_TransPic(int x, int y, const qpic8_t *pic) {
+    if (x < 0 || (unsigned)(x + pic->width) > vid.width || y < 0 || (unsigned)(y + pic->height) > vid.height) {
+        Sys_Error("%s: bad coordinates", __func__);
     }
 
     Draw_Pic(x, y, pic);
 }
-
 
 /*
 =============
@@ -640,9 +592,7 @@ Draw_TransPicTranslate
 Only used for the player color selection menu
 =============
 */
-void
-Draw_TransPicTranslate(int x, int y, const qpic8_t *pic, byte *translation)
-{
+void Draw_TransPicTranslate(int x, int y, const qpic8_t *pic, byte *translation) {
     int v, u;
     unsigned trans[64 * 64], *dest;
     byte *src;
@@ -650,24 +600,23 @@ Draw_TransPicTranslate(int x, int y, const qpic8_t *pic, byte *translation)
 
     /* Don't crash if we have a bad menupic */
     if (pic->width > 48 || pic->height > 56)
-	return;
+        return;
 
     GL_Bind(translate_texture);
 
     dest = trans;
     for (v = 0; v < 64; v++, dest += 64) {
-	src = &menuplyr_pixels[((v * pic->height) >> 6) * pic->width];
-	for (u = 0; u < 64; u++) {
-	    p = src[(u * pic->width) >> 6];
-	    if (p == 255)
-		dest[u] = p;
-	    else
-		dest[u] = d_8to24table[translation[p]];
-	}
+        src = &menuplyr_pixels[((v * pic->height) >> 6) * pic->width];
+        for (u = 0; u < 64; u++) {
+            p = src[(u * pic->width) >> 6];
+            if (p == 255)
+                dest[u] = p;
+            else
+                dest[u] = d_8to24table[translation[p]];
+        }
     }
 
-    qglTexImage2D(GL_TEXTURE_2D, 0, gl_alpha_format, 64, 64, 0, GL_RGBA,
-		 GL_UNSIGNED_BYTE, trans);
+    qglTexImage2D(GL_TEXTURE_2D, 0, gl_alpha_format, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, trans);
 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -685,16 +634,13 @@ Draw_TransPicTranslate(int x, int y, const qpic8_t *pic, byte *translation)
     glEnd();
 }
 
-
 /*
 ================
 Draw_ConsoleBackground
 
 ================
 */
-static void
-Draw_ConsolePic(int lines, float offset, const qpic8_t *pic, float alpha)
-{
+static void Draw_ConsolePic(int lines, float offset, const qpic8_t *pic, float alpha) {
     const glpic_t *glpic;
 
     glpic = const_container_of(pic, glpic_t, pic);
@@ -706,15 +652,15 @@ Draw_ConsolePic(int lines, float offset, const qpic8_t *pic, float alpha)
     glColor4f(1, 1, 1, alpha);
     GL_Bind(glpic->texnum);
 
-    glBegin (GL_QUADS);
-    glTexCoord2f (0, offset);
-    glVertex2f (0, 0);
-    glTexCoord2f (1, offset);
-    glVertex2f (vid.conwidth, 0);
-    glTexCoord2f (1, 1);
-    glVertex2f (vid.conwidth, lines);
-    glTexCoord2f (0, 1);
-    glVertex2f (0, lines);
+    glBegin(GL_QUADS);
+    glTexCoord2f(0, offset);
+    glVertex2f(0, 0);
+    glTexCoord2f(1, offset);
+    glVertex2f(vid.conwidth, 0);
+    glTexCoord2f(1, 1);
+    glVertex2f(vid.conwidth, lines);
+    glTexCoord2f(0, 1);
+    glVertex2f(0, lines);
     glEnd();
 
     glColor4f(1, 1, 1, 1);
@@ -722,43 +668,39 @@ Draw_ConsolePic(int lines, float offset, const qpic8_t *pic, float alpha)
     qglDisable(GL_BLEND);
 }
 
-void
-Draw_ConsoleBackground(int lines)
-{
+void Draw_ConsoleBackground(int lines) {
     int y;
     float offset, alpha;
 
     y = (vid.height * 3) >> 2;
 
     if (gl_constretch.value)
-	offset = 0.0f;
+        offset = 0.0f;
     else
-	offset = (vid.conheight - lines) / (float)vid.conheight;
+        offset = (vid.conheight - lines) / (float)vid.conheight;
 
     if (lines > y)
-	alpha = 1.0f;
+        alpha = 1.0f;
     else
-	alpha = (float) 1.1 * lines / y;
+        alpha = (float)1.1 * lines / y;
 
     Draw_ConsolePic(lines, offset, &conback->pic, alpha);
 
 #ifdef QW_HACK
     {
-	const char *version;
-	int x;
+        const char *version;
+        int x;
 
-	// hack the version number directly into the pic
-	y = lines - 14;
-	if (!cls.download) {
-	    version = va("TyrQuake (%s) QuakeWorld", stringify(TYR_VERSION));
-	    x = vid.conwidth - (strlen(version) * 8 + 11) -
-		(vid.conwidth * 8 / conback->pic.width) * 7;
-	    Draw_Alt_String(x, y, version);
-	}
+        // hack the version number directly into the pic
+        y = lines - 14;
+        if (!cls.download) {
+            version = va("TyrQuake (%s) QuakeWorld", stringify(TYR_VERSION));
+            x = vid.conwidth - (strlen(version) * 8 + 11) - (vid.conwidth * 8 / conback->pic.width) * 7;
+            Draw_Alt_String(x, y, version);
+        }
     }
 #endif
 }
-
 
 /*
 =============
@@ -768,9 +710,7 @@ This repeats a 64*64 tile graphic to fill the screen around a sized down
 refresh window.
 =============
 */
-void
-Draw_TileClear(int x, int y, int w, int h)
-{
+void Draw_TileClear(int x, int y, int w, int h) {
     const glpic_t *glpic = const_container_of(draw_backtile, glpic_t, pic);
 
     glColor3f(1, 1, 1);
@@ -787,7 +727,6 @@ Draw_TileClear(int x, int y, int w, int h)
     glEnd();
 }
 
-
 /*
 =============
 Draw_Fill
@@ -795,13 +734,9 @@ Draw_Fill
 Fills a box of pixels with a single color
 =============
 */
-void
-Draw_Fill(int x, int y, int w, int h, int c)
-{
+void Draw_Fill(int x, int y, int w, int h, int c) {
     qglDisable(GL_TEXTURE_2D);
-    glColor3f(host_basepal[c * 3] / 255.0,
-	      host_basepal[c * 3 + 1] / 255.0,
-	      host_basepal[c * 3 + 2] / 255.0);
+    glColor3f(host_basepal[c * 3] / 255.0, host_basepal[c * 3 + 1] / 255.0, host_basepal[c * 3 + 2] / 255.0);
 
     glBegin(GL_QUADS);
 
@@ -823,9 +758,7 @@ Draw_FadeScreen
 
 ================
 */
-void
-Draw_FadeScreen(void)
-{
+void Draw_FadeScreen(void) {
     qglEnable(GL_BLEND);
     qglDisable(GL_TEXTURE_2D);
     glColor4f(0, 0, 0, 0.8);
@@ -854,14 +787,10 @@ Draws the little blue disc in the corner of the screen.
 Call before beginning any disc IO.
 ================
 */
-void
-Draw_BeginDisc(void)
-{
+void Draw_BeginDisc(void) {
     if (!draw_disc)
-	return;
-
+        return;
 }
-
 
 /*
 ================
@@ -871,10 +800,7 @@ Erases the disc icon.
 Call after completing any disc IO
 ================
 */
-void
-Draw_EndDisc(void)
-{
-}
+void Draw_EndDisc(void) {}
 
 /*
 ================
@@ -883,9 +809,7 @@ GL_Set2D
 Setup as if the screen was 320*200
 ================
 */
-void
-GL_Set2D(void)
-{
+void GL_Set2D(void) {
     glViewport(glx, gly, glwidth, glheight);
 
     glMatrixMode(GL_PROJECTION);
@@ -899,7 +823,7 @@ GL_Set2D(void)
     qglDisable(GL_CULL_FACE);
     qglDisable(GL_BLEND);
     qglEnable(GL_ALPHA_TEST);
-//      qglDisable(GL_ALPHA_TEST);
+    //      qglDisable(GL_ALPHA_TEST);
 
     glColor4f(1, 1, 1, 1);
 }
