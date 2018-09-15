@@ -245,28 +245,14 @@ VID_InitGL(void)
     qglMultiTexCoord2fARB = NULL;
     qglActiveTextureARB = NULL;
     gl_mtexable = false;
-    if (!COM_CheckParm("-nomtex") && VID_GL_CheckExtn("GL_ARB_multitexture")) {
-        // qglMultiTexCoord2fARB = nglMultiTexCoord2fARB;
-        // qglActiveTextureARB = nglActiveTextureARB;
-        glGetIntegerv(GL_MAX_TEXTURE_UNITS, &gl_num_texture_units);
-        if (gl_num_texture_units >= 2 && qglMultiTexCoord2fARB && qglActiveTextureARB)
-            gl_mtexable = true;
-        Con_Printf("ARB multitexture extension enabled\n"
-         "-> %i texture units available\n",
-         gl_num_texture_units);
-    }
 
     GL_ExtensionCheck_NPoT();
 
     QGL_Init();
 
-    // glClearDepthf(1);
-    // glClearColor(1, 0, 0, 0);
-    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_FRONT);
     qglEnable(GL_TEXTURE_2D);
     qglEnable(GL_ALPHA_TEST);
-    // glAlphaFunc(GL_GREATER, 0.666);
 
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

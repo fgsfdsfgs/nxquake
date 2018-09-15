@@ -4,7 +4,7 @@
 #include "quakedef.h"
 
 #define QGL_MAXVERTS  16384
-#define QGL_MSTACKLEN 4
+#define QGL_MSTACKLEN 8
 
 // internal shader shit
 

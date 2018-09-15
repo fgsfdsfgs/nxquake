@@ -37,7 +37,7 @@ static GLuint cur_program = (GLuint)-1;
 
 static qboolean just_color; // HACK
 
-static int state_mask = 0;
+static int state_mask = 0x00;
 static int texenv_mask = 0;
 static int texcoord_state = 0;
 static int alpha_state = 0;
@@ -152,6 +152,7 @@ void QGL_SetShader( void )
 {
 	qboolean changed = true;
 	just_color = false;
+
 	switch( state_mask + texenv_mask )
 	{
 		case 0x00: // Everything off
@@ -215,7 +216,8 @@ void QGL_EnableGLState( int state )
 		case GL_TEXTURE_2D:
 			if( !texcoord_state )
 			{
-				state_mask += 0x01;
+				state_mask += 0x01 + 0x02; // also enable color
+				color_state = 1;
 				texcoord_state = 1;
 			}
 			break;
@@ -244,7 +246,8 @@ void QGL_DisableGLState( int state )
 		case GL_TEXTURE_2D:
 			if( texcoord_state )
 			{
-				state_mask -= 0x01;
+				state_mask -= 0x01 + 0x02; // also disable color
+				color_state = 0;
 				texcoord_state = 0;
 			}
 			break;
@@ -272,9 +275,10 @@ static mat4 m_modelview = GLM_MAT4_IDENTITY_INIT;
 static mat4 m_projection = GLM_MAT4_IDENTITY_INIT;
 static mat4 m_mvp = GLM_MAT4_IDENTITY_INIT;
 static mat4 *m_selected = &m_projection;
-static mat4 m_stack[2][QGL_MSTACKLEN];
-static int m_stack_pos[2] = { 0 };
-static int m_stack_idx = 0;
+static mat4 m_stack_mv[QGL_MSTACKLEN] = { GLM_MAT4_IDENTITY_INIT };
+static mat4 m_stack_p[QGL_MSTACKLEN] = { GLM_MAT4_IDENTITY_INIT };
+static int m_stack_mvn = 1;
+static int m_stack_pn = 1;
 static qboolean mvp_modified = true;
 
 #pragma pack(push, 1)
@@ -285,7 +289,7 @@ typedef struct {
 } bufvert_t;
 #pragma pack(pop)
 
-static int imm_mode = 0;
+static int imm_mode = -1;
 static int imm_numverts = 0;
 static bufvert_t *imm_vertbuf = NULL;
 static bufvert_t *imm_vertp = NULL;
@@ -296,12 +300,12 @@ qboolean QGL_Init(void)
   if (!imm_vertbuf) return false;
   imm_vertp = imm_vertbuf;
 
-  imm_mode = 0;
+  imm_mode = -1;
   imm_numverts = 0;
 
-  glActiveTexture(GL_TEXTURE0);
-
   QGL_ReloadShaders();
+
+  glActiveTexture(GL_TEXTURE0);
 
   glEnableVertexAttribArray(0);
   glEnableVertexAttribArray(1);
@@ -330,13 +334,6 @@ void qglBegin( GLenum prim )
 
 void qglEnd( void )
 {
-    if( imm_mode == 0 || imm_numverts == 0 )
-    {
-        imm_mode = 0;
-        imm_numverts = 0;
-        return; // panic here?
-    }
-
     if( mvp_modified )
         glm_mat4_mul(m_projection, m_modelview, m_mvp);
 
@@ -350,14 +347,17 @@ void qglEnd( void )
     else if( cur_program == QGL_SHADER_TEX2D_MODUL_A ) glUniform4fv( u_modcolor[1], 1, cur_color );
     else if( just_color ) glUniform4fv( u_monocolor, 1, cur_color );
 
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].pos[0]));
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].uv[0]));
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].color[0]));
-    glDrawArrays(imm_mode, 0, imm_numverts);
+    if( imm_mode > -1 && imm_numverts )
+    {
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].pos[0]));
+        glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].uv[0]));
+        glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].color[0]));
+        glDrawArrays(imm_mode, 0, imm_numverts);
+    }
 
     imm_vertp = imm_vertbuf;
     imm_numverts = 0;
-    imm_mode = 0;
+    imm_mode = -1;
 }
 
 void qglVertex3f( GLfloat x, GLfloat y, GLfloat z )
@@ -528,15 +528,9 @@ void qglTexImage2D( GLenum target, GLint level, GLint internalformat, GLsizei wi
 void qglMatrixMode( GLenum mode )
 {
   if( mode == GL_PROJECTION )
-  {
       m_selected = &m_projection;
-      m_stack_idx = 0;
-  }
   else if( mode == GL_MODELVIEW )
-  {
       m_selected = &m_modelview;
-      m_stack_idx = 1;
-  }
 }
 
 void qglLoadIdentity( void )
@@ -547,16 +541,38 @@ void qglLoadIdentity( void )
 
 void qglPushMatrix( void )
 {
-    if( m_stack_pos[m_stack_idx] == QGL_MSTACKLEN )
-        Sys_Error("qglPushMatrix(): out of stack space!");
-    glm_mat4_copy(*m_selected, m_stack[m_stack_idx][m_stack_pos[m_stack_idx]++]);
+    if( m_selected == &m_modelview )
+    {
+        if( m_stack_mvn == QGL_MSTACKLEN )
+            Sys_Error("qglPushMatrix(): out of stack space!");
+        glm_mat4_copy(*m_selected, m_stack_mv[m_stack_mvn]);
+        m_stack_mvn++;
+    }
+    else if( m_selected == &m_projection )
+    {
+        if( m_stack_pn == QGL_MSTACKLEN )
+            Sys_Error("qglPushMatrix(): out of stack space!");
+        glm_mat4_copy(*m_selected, m_stack_p[m_stack_pn]);
+        m_stack_pn++;
+    }
 }
 
 void qglPopMatrix( void )
 {
-    if( m_stack_pos[m_stack_idx] == 0 )
-        Sys_Error("qglPopMatrix(): stack is empty!");
-    glm_mat4_copy(m_stack[m_stack_idx][m_stack_pos[m_stack_idx]--], *m_selected);
+    if( m_selected == &m_modelview )
+    {
+        if( m_stack_mvn == 0 )
+            Sys_Error("qglPopMatrix(): pop from empty stack!");
+        glm_mat4_copy(m_stack_mv[m_stack_mvn], *m_selected);
+        m_stack_mvn--;
+    }
+    else if( m_selected == &m_projection )
+    {
+        if( m_stack_pn == QGL_MSTACKLEN )
+            Sys_Error("qglPushMatrix(): out of stack space!");
+        glm_mat4_copy(m_stack_p[m_stack_pn], *m_selected);
+        m_stack_pn--;
+    }
     mvp_modified = true;
 }
 

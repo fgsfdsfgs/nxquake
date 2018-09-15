@@ -31,7 +31,16 @@ void Q_SDL_InitOnce(void) {
 
     if (init_done) return;
 
-    if (SDL_Init(SDL_INIT_TIMER | SDL_INIT_EVENTS) < 0) Sys_Error("SDL_Init(0) failed: %s", SDL_GetError());
+    if (SDL_Init(SDL_INIT_EVENTS) < 0) Sys_Error("SDL_Init(0) failed: %s", SDL_GetError());
+#ifdef GLQUAKE
+    if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) printf("SDL_VIDEO borked: %s\n", SDL_GetError());
+    printf("sdl_window\n");
+    int flags = SDL_WINDOW_SHOWN | SDL_WINDOW_FULLSCREEN;
+    sdl_window = SDL_CreateWindow("", 0, 0, 1280, 720, flags);
+    if (!sdl_window) printf("sdl_window == NULL!\n%s\n", SDL_GetError());
+    SDL_Renderer *renderer = SDL_CreateRenderer(sdl_window, -1, 0);
+    if (!renderer) printf("sdl_renderer == NULL!\n%s\n", SDL_GetError());
+#endif
 
     init_done = true;
 }
