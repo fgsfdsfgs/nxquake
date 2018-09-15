@@ -202,7 +202,10 @@ void QGL_SetShader( void )
 			changed = false;
 			break;
 	}
-	if( changed ) program_changed = true;
+	if( changed ) {
+    program_changed = true;
+    // printf("PROGRAM CHANGE %u -> %u\n", old_program, cur_program);
+  }
 }
 
 void QGL_EnableGLState( int state )
@@ -343,12 +346,12 @@ void qglEnd( void )
     program_changed = false;
     mvp_modified = false;
 
-    if( (state_mask + texenv_mask) == 0x05 ) glUniform4fv( u_modcolor[0], 1, cur_color );
-    else if( (state_mask + texenv_mask) == 0x0D ) glUniform4fv( u_modcolor[1], 1, cur_color );
+    if( cur_program == QGL_SHADER_TEX2D_MODUL ) glUniform4fv( u_modcolor[0], 1, cur_color );
+    else if( cur_program == QGL_SHADER_TEX2D_MODUL_A ) glUniform4fv( u_modcolor[1], 1, cur_color );
     else if( just_color ) glUniform4fv( u_monocolor, 1, cur_color );
 
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].pos[0]));
-    if (texcoord_state) glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].uv[0]));
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].uv[0]));
     glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, sizeof(bufvert_t), &(imm_vertbuf[0].color[0]));
     glDrawArrays(imm_mode, 0, imm_numverts);
 
@@ -516,7 +519,7 @@ void qglTexImage2D( GLenum target, GLint level, GLint internalformat, GLsizei wi
 			in[3] = 255;
 	}
 
-	internalformat = format = GL_RGBA;
+	internalformat = format;
 	glTexImage2D( target, level, internalformat, width, height, border, format, type, pixels );
 }
 
@@ -539,6 +542,7 @@ void qglMatrixMode( GLenum mode )
 void qglLoadIdentity( void )
 {
     glm_mat4_identity(*m_selected);
+    mvp_modified = true;
 }
 
 void qglPushMatrix( void )
@@ -559,6 +563,7 @@ void qglPopMatrix( void )
 void qglLoadMatrixf( GLfloat *m )
 {
     memcpy(*m_selected, m, sizeof(GLfloat) * 16);
+    mvp_modified = true;
 }
 
 void qglTranslatef( GLfloat x, GLfloat y, GLfloat z )
@@ -569,6 +574,7 @@ void qglTranslatef( GLfloat x, GLfloat y, GLfloat z )
 
 void qglRotatef( GLfloat a, GLfloat x, GLfloat y, GLfloat z )
 {
+    glm_make_rad(&a);
     glm_rotate(*m_selected, a, (vec3){ x, y, z });
     mvp_modified = true;
 }

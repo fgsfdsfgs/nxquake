@@ -441,7 +441,7 @@ GL_AliasDrawModel(const entity_t *entity, float blend)
     order = (int *)((byte *)aliashdr + GL_Aliashdr(aliashdr)->commands);
 
 #ifdef NQ_HACK
-    if (r_lerpmodels.value && blend != 1.0f) {
+    if (r_lerpmodels.value && blend < 1.0f) {
 	const trivertx_t *lightvert;
 	const trivertx_t *verts0;
 	const float blend0 = 1.0f - blend;

@@ -120,7 +120,7 @@ static cvar_t scr_showturtle = {"showturtle", "0"};
 static cvar_t scr_showpause = {"showpause", "1"};
 static cvar_t show_fps = {"show_fps", "0"}; /* set for running times */
 #ifdef GLQUAKE
-static cvar_t gl_triplebuffer = {"gl_triplebuffer", "1", true};
+static cvar_t gl_triplebuffer = {"gl_triplebuffer", "0", true};
 #else
 static vrect_t *pconupdate;
 #endif

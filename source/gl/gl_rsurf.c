@@ -452,21 +452,23 @@ R_UploadLMBlockUpdate(int blocknum)
     unsigned offset;
 
     rect = &lm_blocks[blocknum].rectchange;
-    offset = (BLOCK_WIDTH * rect->t + rect->l) * lightmap_bytes;
+    //offset = (BLOCK_WIDTH * rect->t + rect->l) * lightmap_bytes;
+    offset = BLOCK_WIDTH * rect->t * lightmap_bytes;
     pixels = lm_blocks[blocknum].data + offset;
 
     /* set unpacking width to BLOCK_WIDTH, reset after */
     // glPixelStorei(GL_UNPACK_ROW_LENGTH, BLOCK_WIDTH);
-    glTexSubImage2D(GL_TEXTURE_2D,
+    /*glTexSubImage2D(GL_TEXTURE_2D,
 		    0,
-		    rect->l, /* x-offset */
-		    rect->t, /* y-offset */
+		    rect->l, // x-offset
+		    rect->t, // y-offset
 		    rect->w,
 		    rect->h,
 		    gl_lightmap_format,
 		    GL_UNSIGNED_BYTE,
-		    pixels);
+		    pixels);*/
     // glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, rect->t, BLOCK_WIDTH, rect->h, gl_lightmap_format, GL_UNSIGNED_BYTE, pixels);
 
     rect->l = BLOCK_WIDTH;
     rect->t = BLOCK_HEIGHT;
@@ -1287,7 +1289,7 @@ GL_BuildLightmaps(void *hunkbase)
 	lightmap_textures_initialised = 1;
     }
 
-    gl_lightmap_format = GL_RGBA;
+    gl_lightmap_format = GL_LUMINANCE;
     if (COM_CheckParm("-lm_1"))
 	gl_lightmap_format = GL_LUMINANCE;
     if (COM_CheckParm("-lm_a"))
@@ -1358,7 +1360,7 @@ GL_BuildLightmaps(void *hunkbase)
 	GL_Bind(block->texture);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	qglTexImage2D(GL_TEXTURE_2D, 0, lightmap_bytes, BLOCK_WIDTH,
+	qglTexImage2D(GL_TEXTURE_2D, 0, gl_lightmap_format, BLOCK_WIDTH,
 		     BLOCK_HEIGHT, 0, gl_lightmap_format, GL_UNSIGNED_BYTE,
 		     block->data);
     }

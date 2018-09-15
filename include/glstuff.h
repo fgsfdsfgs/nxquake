@@ -3,7 +3,7 @@
 
 #include "quakedef.h"
 
-#define QGL_MAXVERTS  256
+#define QGL_MAXVERTS  16384
 #define QGL_MSTACKLEN 4
 
 // internal shader shit
@@ -62,6 +62,7 @@ typedef double GLdouble;
 
 qboolean QGL_Init(void);
 void QGL_Deinit(void);
+void QGL_EndFrame(void);
 
 void qglBegin( GLenum prim );
 void qglEnd( void );

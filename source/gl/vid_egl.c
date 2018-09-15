@@ -136,9 +136,10 @@ InitEGL(void)
     EGLint numConfigs;
     static const EGLint attributeList[] =
     {
-        EGL_RED_SIZE, 1,
-        EGL_GREEN_SIZE, 1,
-        EGL_BLUE_SIZE, 1,
+        EGL_RED_SIZE, 8,
+        EGL_GREEN_SIZE, 8,
+        EGL_BLUE_SIZE, 8,
+        EGL_DEPTH_SIZE, 24,
         EGL_NONE
     };
     eglChooseConfig(s_display, attributeList, &config, 1, &numConfigs);
@@ -156,8 +157,13 @@ InitEGL(void)
         goto _fail1;
     }
 
+    static const EGLint ctxAttributeList[] =
+    {
+        EGL_CONTEXT_CLIENT_VERSION, 2,
+        EGL_NONE
+    };
     // Create an EGL rendering context
-    s_context = eglCreateContext(s_display, config, EGL_NO_CONTEXT, NULL);
+    s_context = eglCreateContext(s_display, config, EGL_NO_CONTEXT, ctxAttributeList);
     if (!s_context)
     {
         Sys_Error( "EGL: Context creation failed! error: %d", eglGetError());
@@ -254,12 +260,11 @@ VID_InitGL(void)
 
     QGL_Init();
 
-    glClearColor(0.5, 0.5, 0.5, 1.0);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
+    // glClearDepthf(1);
+    // glClearColor(1, 0, 0, 0);
+    // glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glCullFace(GL_FRONT);
     qglEnable(GL_TEXTURE_2D);
-
     qglEnable(GL_ALPHA_TEST);
     // glAlphaFunc(GL_GREATER, 0.666);
 
@@ -346,8 +351,6 @@ GL_BeginRendering(int *x, int *y, int *width, int *height)
     *x = *y = 0;
     *width = vid.width;
     *height = vid.height;
-    glClearColor(0.5, 0.5, 0.5, 1.0);
-    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 }
 
 void
