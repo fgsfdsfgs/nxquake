@@ -1,11 +1,10 @@
 # NXQuake
-Switch port of [TyrQuake](https://disenchant.net/tyrquake/).
-Only contains NetQuake with software rendering.
+Switch port of [TyrQuake](https://disenchant.net/tyrquake/) (only the NetQuake part).
 
 ## Building
 You need:
 * latest versions of devkitA64 and libnx;
-* switch-sdl2 (you can install this with `(dkp-)pacman`).
+* latest versions of switch-sdl2, switch-mesa, switch-libdrm_nouveau.
 
 Run `make` in this directory to build `nxquake.nro`.
 
