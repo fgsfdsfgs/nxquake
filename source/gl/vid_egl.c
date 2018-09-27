@@ -154,6 +154,7 @@ _fail0:
 
 static void DeinitEGL(void) {
     if (s_display) {
+        eglMakeCurrent(s_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
         if (s_context) {
             eglDestroyContext(s_display, s_context);
             s_context = NULL;
@@ -251,9 +252,12 @@ qboolean VID_SetMode(const qvidmode_t *mode, const byte *palette) {
 static SDL_Renderer *sdl_renderer;
 
 void VID_Init(const byte *palette) {
+    static qboolean did_init = false;
     int err;
     qvidmode_t *mode;
     const qvidmode_t *setmode;
+
+    if (did_init) return;
 
     Q_SDL_InitOnce();
 
@@ -288,6 +292,7 @@ void VID_Init(const byte *palette) {
 
     vid_menudrawfn = VID_MenuDraw;
     vid_menukeyfn = VID_MenuKey;
+    did_init = true;
 }
 
 void VID_Shutdown(void) {
