@@ -53,7 +53,7 @@ static qboolean shaders_reload = false;
 
 static qboolean program_changed = true;
 
-static void *CompileShader(const char *src, GLuint idx, GLboolean frag) {
+static void CompileShader(const char *src, GLuint idx, GLboolean frag) {
     static GLchar msg[2048];
     GLint status;
 
