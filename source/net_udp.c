@@ -112,10 +112,9 @@ int UDP_Init(void) {
     int err;
     char buff[MAXHOSTNAMELEN];
     char *colon;
-    struct hostent *local;
     netadr_t addr;
 
-    /*if (COM_CheckParm("-noudp")) */return -1;
+    if (COM_CheckParm("-noudp")) return -1;
 
     /* determine my name & address, default to loopback */
     myAddr.ip.l = htonl(INADDR_LOOPBACK);
@@ -125,15 +124,7 @@ int UDP_Init(void) {
         Con_Printf("%s: WARNING: gethostname failed (%s)\n", __func__, strerror(errno));
     } else {
         buff[MAXHOSTNAMELEN - 1] = 0;
-        local = gethostbyname(buff);
-        if (!local) {
-            Con_Printf("%s: WARNING: gethostbyname failed (%s)\n", __func__, hstrerror(h_errno));
-        } else if (local->h_addrtype != AF_INET) {
-            Con_Printf("%s: address from gethostbyname not IPv4\n", __func__);
-        } else {
-            struct in_addr *inaddr = (struct in_addr *)local->h_addr_list[0];
-            myAddr.ip.l = inaddr->s_addr;
-        }
+        myAddr.ip.l = htonl(gethostid());
     }
 
     i = COM_CheckParm("-ip");
